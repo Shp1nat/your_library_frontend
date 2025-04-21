@@ -66,8 +66,6 @@ export default {
         const data = await response.json();
         if (data.error) {
           alert('Ошибка сохранения: ' + data.error);
-        } else {
-          alert('Профиль обновлен');
         }
       } catch (err) {
         console.error('Ошибка при сохранении профиля', err);
