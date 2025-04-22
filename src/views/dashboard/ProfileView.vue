@@ -99,9 +99,9 @@ export default {
         });
         const data = await response.json();
         if (data.error) {
-          this.errorMessage = 'Ошибка сохранения: ' + data.error;
+          this.errorMessage = data.error;
         } else {
-          this.successMessage = 'Профиль успешно сохранён!';
+          this.successMessage = 'Информация успешно сохранёна!';
         }
       } catch (err) {
         console.error('Ошибка при сохранении профиля', err);
