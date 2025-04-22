@@ -2,6 +2,11 @@
   <div class="profile-container">
     <h2>Профиль пользователя</h2>
     <form class="profile-form" @submit.prevent="saveProfile">
+      <img v-if="user.picture" :src="'data:image/jpeg;base64,' + user.picture" alt="Avatar" />
+      <div class="form-group">
+        <label for="avatar">Аватар</label>
+        <input id="avatar" type="file" @change="onAvatarChange" />
+      </div>
       <div class="form-group">
         <label for="login">Логин</label>
         <input id="login" v-model="user.login" type="text" required />
@@ -25,7 +30,6 @@
       </div>
       <button type="submit" class="save-button">Сохранить</button>
 
-      <!-- Сообщения об успехе и ошибке -->
       <div v-if="successMessage" class="message success-message">
         <p>{{ successMessage }}</p>
       </div>
@@ -46,6 +50,7 @@ export default {
         lastname: '',
         patronymic: '',
         age: null,
+        avatar: null
       },
       successMessage: '',
       errorMessage: ''
@@ -73,27 +78,36 @@ export default {
     }
   },
   methods: {
+    onAvatarChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.user.avatar = file;
+      }
+    },
     async saveProfile() {
       this.successMessage = '';
       this.errorMessage = '';
 
       const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('user', JSON.stringify({
+        login: this.user.login,
+        name: this.user.name,
+        lastname: this.user.lastname,
+        patronymic: this.user.patronymic,
+        age: this.user.age
+      }));
+
+      if (this.user.avatar) {
+        formData.append('avatar', this.user.avatar);
+      }
       try {
         const response = await fetch('http://localhost:3000/proxy/update-profile.json', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            user: {
-              login: this.user.login,
-              name: this.user.name,
-              lastname: this.user.lastname,
-              patronymic: this.user.patronymic,
-              age: this.user.age
-            }
-          })
+          body: formData
         });
         const data = await response.json();
         if (data.error) {
