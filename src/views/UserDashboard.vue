@@ -8,7 +8,7 @@
         <router-link to="/dashboard/orders">Заказы</router-link>
         <router-link to="/dashboard/vacancies">Вакансии</router-link>
       </nav>
-      <button @click="logout" class="logout-button">Выход</button>
+      <button @click="logout" class="logout-button">Выход из аккаунта</button>
     </aside>
     <main class="content">
       <router-view />
@@ -84,17 +84,21 @@ export default {
 .logout-button {
   width: 100%;
   padding: 12px;
-  background-color: #ff4d4f;
-  color: white;
-  border: none;
+  background-color: #ffffff;
+  color: #1e3a8a;
+  border: 2px solid #1e3a8a;
   border-radius: 6px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .logout-button:hover {
-  background-color: #d9363e;
+  background-color: #ff4d4f;
+  color: #ffffff;
+  border-color: #ff4d4f;
+  transform: scale(1.05);
 }
 
 .content {
