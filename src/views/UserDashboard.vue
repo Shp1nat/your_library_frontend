@@ -31,54 +31,78 @@ export default {
 <style scoped>
 .dashboard {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  background-color: #f4f4f9;
 }
 
 .sidebar {
-  width: 220px;
-  background: #f0f0f0;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  width: 240px;
+  background-color: #1e3a8a; /* темно-синий фон */
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
-  display: block;
+  width: 160px;
+  margin-bottom: 40px;
+}
+
+.menu {
   width: 100%;
-  max-width: 160px;
-  margin: 0 auto 30px auto;
+  flex-grow: 1;
 }
 
 .menu a {
   display: block;
-  margin: 15px 0;
-  font-weight: bold;
-  color: #333;
+  margin: 12px 0;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #ffffff;
   text-decoration: none;
+  transition: background-color 0.3s ease;
 }
 
 .menu a.router-link-exact-active {
-  color: #42b983;
+  background-color: #2c5282;
+}
+
+.menu a:hover {
+  background-color: #3b5998;
 }
 
 .logout-button {
-  padding: 10px 20px;
+  width: 100%;
+  padding: 12px;
   background-color: #ff4d4f;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
-  margin-top: 20px;
+  transition: background-color 0.3s ease;
 }
 
 .logout-button:hover {
-  background-color: #ff7875;
+  background-color: #d9363e;
 }
 
 .content {
+  margin-left: 240px;
   flex-grow: 1;
-  padding: 30px;
+  padding: 40px;
+  overflow-y: auto;
+  height: 100vh;
+  background-color: #f4f4f9;
 }
 </style>
