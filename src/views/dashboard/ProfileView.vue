@@ -77,10 +77,9 @@ export default {
       this.successMessage = '';
       this.errorMessage = '';
 
-      const userId = localStorage.getItem('userId');
       const token = localStorage.getItem('token');
       try {
-        const response = await fetch('http://localhost:3000/proxy/set-user.json', {
+        const response = await fetch('http://localhost:3000/proxy/update-profile.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -88,7 +87,6 @@ export default {
           },
           body: JSON.stringify({
             user: {
-              id: parseInt(userId),
               login: this.user.login,
               name: this.user.name,
               lastname: this.user.lastname,
