@@ -6,6 +6,7 @@ import ProfileLayout from '@/layouts/ProfileLayout.vue'
 import BooksLayout from '@/layouts/BooksLayout.vue'
 import OrdersLayout from '@/layouts/OrdersLayout.vue'
 import VacanciesLayout from '@/layouts/VacanciesLayout.vue'
+import EditorPage from '@/views/adminDashboard/EditorView.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -16,10 +17,11 @@ const routes = [
     component: DashboardLayout,
     children: [
       { path: '', redirect: 'profile' },
-      { path: 'profile', component: ProfileLayout },
-      { path: 'books', component: BooksLayout },
-      { path: 'orders', component: OrdersLayout },
-      { path: 'vacancies', component: VacanciesLayout }
+      { path: 'profile', component: ProfileLayout, alias: '/profile' },
+      { path: 'books', component: BooksLayout, alias: '/books' },
+      { path: 'editor', component: EditorPage, alias: '/editor' },
+      { path: 'orders', component: OrdersLayout, alias: '/orders' },
+      { path: 'vacancies', component: VacanciesLayout, alias: '/vacancies' },
     ]
   }
 ]

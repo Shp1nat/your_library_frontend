@@ -3,10 +3,10 @@
     <aside class="sidebar">
       <img src="@/assets/yourLibraryLogo.png" alt="Logo" class="logo" />
       <nav class="menu">
-        <router-link to="/dashboard/profile">Профиль</router-link>
-        <router-link to="/dashboard/books">Книги</router-link>
-        <router-link to="/dashboard/orders">Заказы</router-link>
-        <router-link to="/dashboard/vacancies">Вакансии</router-link>
+        <router-link to="/profile">Профиль</router-link>
+        <router-link to="/books">Книги</router-link>
+        <router-link to="/orders">Заказы</router-link>
+        <router-link to="/vacancies">Вакансии</router-link>
       </nav>
       <button @click="logout" class="logout-button">Выход из аккаунта</button>
     </aside>
