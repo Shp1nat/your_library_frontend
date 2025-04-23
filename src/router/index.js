@@ -1,20 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginPage from '../components/LoginPage.vue'
 import RegisterPage from '../components/RegisterPage.vue'
-import AboutView from '../views/AboutView.vue'
 import UserDashboard from '../views/UserDashboard.vue'
-import Profile from '../views/dashboard/ProfileView.vue'
-import Books from '../views/dashboard/BooksView.vue'
-import Orders from '../views/dashboard/OrdersView.vue'
-import Vacancies from '../views/dashboard/VacanciesView.vue'
+import Profile from '@/views/userDashboard/ProfileView.vue'
+import Books from '@/views/userDashboard/BooksView.vue'
+import Orders from '@/views/userDashboard/OrdersView.vue'
+import Vacancies from '@/views/userDashboard/VacanciesView.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: LoginPage },
   { path: '/register', component: RegisterPage },
-  { path: '/about', component: AboutView },
   {
-    path: '/dashboard',
+    path: '/userDashboard',
     component: UserDashboard,
     children: [
       { path: '', redirect: 'profile' },
