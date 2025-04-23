@@ -18,10 +18,10 @@ export default {
         'Жанры': '/editor/genres',
         'Типы': '/editor/types',
         'Книги': '/editor/books',
-        'Экземпляры': '/editor/copies',
+        'Экземпляры': '/editor/examples',
         'Издательства': '/editor/publishers'
       }
-      this.$router.push(pathMap[this.label] || '/dashboard')
+      this.$router.push(pathMap[this.label] || '/')
     }
   }
 }

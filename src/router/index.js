@@ -8,20 +8,34 @@ import OrdersLayout from '@/layouts/OrdersLayout.vue'
 import VacanciesLayout from '@/layouts/VacanciesLayout.vue'
 import EditorPage from '@/views/adminDashboard/EditorView.vue'
 
+import AuthorsView from '@/views/editor/AuthorsView.vue'
+import GenresView from '@/views/editor/GenresView.vue'
+import TypesView from '@/views/editor/TypesView.vue'
+import BooksEditorView from '@/views/editor/BooksView.vue'
+import ExamplesView from '@/views/editor/ExamplesView.vue'
+import PublishersView from '@/views/editor/PublishersView.vue'
+
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: LoginPage },
   { path: '/register', component: RegisterPage },
   {
-    path: '/dashboard',
+    path: '/',
     component: DashboardLayout,
     children: [
       { path: '', redirect: 'profile' },
-      { path: 'profile', component: ProfileLayout, alias: '/profile' },
-      { path: 'books', component: BooksLayout, alias: '/books' },
-      { path: 'editor', component: EditorPage, alias: '/editor' },
-      { path: 'orders', component: OrdersLayout, alias: '/orders' },
-      { path: 'vacancies', component: VacanciesLayout, alias: '/vacancies' },
+      { path: 'profile', component: ProfileLayout },
+      { path: 'books', component: BooksLayout },
+      { path: 'editor', component: EditorPage },
+      { path: 'orders', component: OrdersLayout },
+      { path: 'vacancies', component: VacanciesLayout },
+
+      { path: 'editor/authors', component: AuthorsView },
+      { path: 'editor/genres', component: GenresView },
+      { path: 'editor/types', component: TypesView },
+      { path: 'editor/books', component: BooksEditorView },
+      { path: 'editor/examples', component: ExamplesView },
+      { path: 'editor/publishers', component: PublishersView }
     ]
   }
 ]
