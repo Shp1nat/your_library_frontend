@@ -15,6 +15,13 @@
       <router-link to="/register" class="register-link">Нет аккаунта? Зарегистрироваться</router-link>
     </div>
   </div>
+  <div v-if="showRoleModal" class="modal-overlay">
+    <div class="modal">
+      <h3>Выберите способ входа</h3>
+      <button @click="setRole('admin')" class="modal-button admin">Войти как администратор</button>
+      <button @click="setRole('user')" class="modal-button user">Войти как пользователь</button>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -23,7 +30,9 @@ export default {
     return {
       username: '',
       password: '',
-      errorMessage: ''
+      errorMessage: '',
+      showRoleModal: false,
+      tempToken: '',
     }
   },
   methods: {
@@ -38,15 +47,24 @@ export default {
         const data = await response.json()
         if (data.error) {
           this.errorMessage = data.error;
+        } else if (data.result.status === 'admin') {
+          this.tempToken = data.result.accessToken;
+          this.showRoleModal = true;
         } else {
           localStorage.setItem('token', data.result.accessToken)
-          localStorage.setItem('status', data.result.id)
-          this.$router.push('/userDashboard/profile')
+          localStorage.setItem('status', data.result.status)
+          this.$router.push('/dashboard/profile')
         }
       } catch (err) {
         console.error('Login error:', err)
         this.errorMessage = 'Ошибка подключения к серверу';
       }
+    },
+    setRole(role) {
+      localStorage.setItem('token', this.tempToken)
+      localStorage.setItem('status', role)
+      this.showRoleModal = false
+      this.$router.push('/dashboard/profile')
     }
   }
 }
@@ -154,4 +172,76 @@ h1 {
 .register-link:hover {
   text-decoration: underline;
 }
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: #ffffff;
+  padding: 30px 40px;
+  border-radius: 12px;
+  width: 380px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: fadeInModal 0.3s ease-out;
+}
+
+.modal h3 {
+  font-size: 1.4rem;
+  color: #1f2937;
+  margin-bottom: 25px;
+}
+
+.modal-button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  transition: all 0.25s ease-in-out;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+.modal-button.admin {
+  background-color: #1e3a8a;
+}
+
+.modal-button.admin:hover {
+  background-color: #172b65;
+  transform: scale(1.02);
+}
+
+.modal-button.user {
+  background-color: #2d6a4f;
+}
+
+.modal-button.user:hover {
+  background-color: #1e4736;
+  transform: scale(1.02);
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 </style>

@@ -41,14 +41,10 @@ export default {
           body: JSON.stringify({ user: { login: this.username, password: this.password } }),
         });
         const data = await response.json();
-        if (data.error) {
+        if (data.error)
           this.errorMessage = data.error;
-        } else {
+        else
           this.successMessage = 'Регистрация прошла успешно!';
-          setTimeout(() => {
-            this.$router.push('/login');
-          }, 2000);
-        }
       } catch (err) {
         console.error('Registration error:', err);
         this.errorMessage = 'Ошибка подключения к серверу';
