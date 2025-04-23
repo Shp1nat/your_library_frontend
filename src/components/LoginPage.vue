@@ -40,8 +40,8 @@ export default {
           this.errorMessage = data.error;
         } else {
           localStorage.setItem('token', data.result.accessToken)
-          localStorage.setItem('status', data.result.id)
-          this.$router.push('/userDashboard/profile')
+          localStorage.setItem('status', data.result.status)
+          this.$router.push('/dashboard/profile')
         }
       } catch (err) {
         console.error('Login error:', err)

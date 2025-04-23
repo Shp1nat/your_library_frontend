@@ -1,6 +1,6 @@
 <template>
   <div class="profile-container">
-    <h2>Ваш пользовательский профиль</h2>
+    <h2>Ваш админский профиль</h2>
     <form class="profile-form" @submit.prevent="saveProfile">
       <div class="avatar-wrapper">
         <img
