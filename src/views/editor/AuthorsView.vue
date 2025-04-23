@@ -2,6 +2,8 @@
   <div class="editor-container">
     <h1 class="title">Авторы</h1>
 
+    <button class="btn add" @click="openNewAuthorModal">Добавить автора</button>
+
     <div class="authors-list">
       <div
           v-for="author in authors"
@@ -16,7 +18,7 @@
 
     <div v-if="selectedAuthor" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
-        <h2>Редактирование автора</h2>
+        <h2>{{ isCreatingNew ? 'Добавление автора' : 'Редактирование автора' }}</h2>
         <div class="form-group">
           <label>Имя:</label>
           <input v-model="selectedAuthor.name" />
@@ -35,7 +37,7 @@
         </div>
         <div class="actions">
           <button @click="saveAuthor" class="btn save">Сохранить</button>
-          <button @click="deleteAuthor" class="btn delete">Удалить</button>
+          <button v-if="!isCreatingNew" @click="deleteAuthor" class="btn delete">Удалить</button>
         </div>
       </div>
     </div>
@@ -47,7 +49,8 @@ export default {
   data() {
     return {
       authors: [],
-      selectedAuthor: null
+      selectedAuthor: null,
+      isCreatingNew: false
     }
   },
   async mounted() {
@@ -97,13 +100,24 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ author: { id } })
+        body: JSON.stringify({author: {id}})
       })
       const data = await res.json()
       this.selectedAuthor = data.result.author
+      this.isCreatingNew = false
+    },
+    openNewAuthorModal() {
+      this.selectedAuthor = {
+        name: '',
+        lastname: '',
+        patronymic: '',
+        description: ''
+      }
+      this.isCreatingNew = true
     },
     closeModal() {
       this.selectedAuthor = null
+      this.isCreatingNew = false
     },
     async saveAuthor() {
       const token = localStorage.getItem('token');
@@ -113,7 +127,7 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ author: this.selectedAuthor })
+        body: JSON.stringify({author: this.selectedAuthor})
       })
       await this.loadAuthors()
       this.closeModal()
@@ -126,7 +140,7 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ author: { id: this.selectedAuthor.id } })
+        body: JSON.stringify({author: {id: this.selectedAuthor.id}})
       })
       await this.loadAuthors()
       this.closeModal()
@@ -144,7 +158,13 @@ export default {
   font-size: 2rem;
   font-weight: bold;
   color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.btn.add {
   margin-bottom: 1.5rem;
+  background-color: #10b981;
+  color: white;
 }
 
 .authors-list {
@@ -195,6 +215,10 @@ input, textarea {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 1rem;
+}
+
+textarea {
+  resize: none;
 }
 
 .actions {
