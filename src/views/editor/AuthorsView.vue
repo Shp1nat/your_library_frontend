@@ -2,17 +2,33 @@
   <div class="editor-container">
     <h1 class="title">Авторы</h1>
 
-    <button class="btn add" @click="openNewAuthorModal">Добавить автора</button>
+    <div class="top-bar">
+      <button class="btn add" @click="openNewAuthorModal">Добавить автора</button>
+      <button class="btn delete-selected" @click="deleteSelectedAuthors" :disabled="!selectedIds.length">Удалить выбранных</button>
+    </div>
 
-    <div class="authors-list">
+    <div class="table-container">
+      <div class="table-header">
+        <div class="cell checkbox-cell"></div>
+        <div class="cell">Фамилия <input v-model="searchFields.lastname" @input="loadAuthors" /></div>
+        <div class="cell">Имя <input v-model="searchFields.name" @input="loadAuthors" /></div>
+        <div class="cell">Отчество <input v-model="searchFields.patronymic" @input="loadAuthors" /></div>
+        <div class="cell sortable" @click="toggleSort">Последнее изменение {{ sortDir === 'asc' ? '↑' : '↓' }}</div>
+      </div>
+
       <div
           v-for="author in authors"
           :key="author.id"
-          class="author-card"
+          class="table-row"
           @click="selectAuthor(author.id)"
       >
-        <h2>{{ author.lastname }} {{ author.name }} {{ author.patronymic }}</h2>
-        <p>Последнее изменение: {{ formatDate(author.updatedAt) }}</p>
+        <div class="cell checkbox-cell" @click.stop>
+          <input type="checkbox" :value="author.id" v-model="selectedIds" />
+        </div>
+        <div class="cell">{{ author.lastname }}</div>
+        <div class="cell">{{ author.name }}</div>
+        <div class="cell">{{ author.patronymic }}</div>
+        <div class="cell">{{ formatDate(author.updatedAt) }}</div>
       </div>
     </div>
 
@@ -50,7 +66,14 @@ export default {
     return {
       authors: [],
       selectedAuthor: null,
-      isCreatingNew: false
+      isCreatingNew: false,
+      sortDir: 'asc',
+      selectedIds: [],
+      searchFields: {
+        name: '',
+        lastname: '',
+        patronymic: ''
+      }
     }
   },
   async mounted() {
@@ -59,6 +82,15 @@ export default {
   methods: {
     async loadAuthors() {
       const token = localStorage.getItem('token');
+      const conditions = [];
+
+      for (const field in this.searchFields) {
+        const value = this.searchFields[field]
+        if (value) {
+          conditions.push({ var: field, operator: 'contain', value });
+        }
+      }
+
       const response = await fetch('http://localhost:3000/proxy/get-author-ids.json', {
         method: 'POST',
         headers: {
@@ -66,14 +98,15 @@ export default {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          conditions: [],
+          conditions,
           main_cond: 'and',
           search: '',
-          sort_dir: 'asc'
+          sort: 'updatedAt',
+          sort_dir: this.sortDir
         })
-      })
-      const responseJson = await response.json()
+      });
 
+      const responseJson = await response.json();
       if (responseJson.result.rows.length > 0) {
         const authorsRes = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
           method: 'POST',
@@ -82,15 +115,19 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(responseJson.result)
-        })
-        const authorsData = await authorsRes.json()
-        this.authors = authorsData.result.rows
+        });
+        const authorsData = await authorsRes.json();
+        this.authors = authorsData.result.rows;
       } else {
-        this.authors = []
+        this.authors = [];
       }
     },
+    toggleSort() {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      this.loadAuthors();
+    },
     formatDate(dateStr) {
-      return new Date(dateStr).toLocaleString()
+      return new Date(dateStr).toLocaleString();
     },
     async selectAuthor(id) {
       const token = localStorage.getItem('token');
@@ -100,11 +137,11 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({author: {id}})
-      })
-      const data = await res.json()
-      this.selectedAuthor = data.result.author
-      this.isCreatingNew = false
+        body: JSON.stringify({ author: { id } })
+      });
+      const data = await res.json();
+      this.selectedAuthor = data.result.author;
+      this.isCreatingNew = false;
     },
     openNewAuthorModal() {
       this.selectedAuthor = {
@@ -112,12 +149,12 @@ export default {
         lastname: '',
         patronymic: '',
         description: ''
-      }
-      this.isCreatingNew = true
+      };
+      this.isCreatingNew = true;
     },
     closeModal() {
-      this.selectedAuthor = null
-      this.isCreatingNew = false
+      this.selectedAuthor = null;
+      this.isCreatingNew = false;
     },
     async saveAuthor() {
       const token = localStorage.getItem('token');
@@ -127,10 +164,10 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({author: this.selectedAuthor})
-      })
-      await this.loadAuthors()
-      this.closeModal()
+        body: JSON.stringify({ author: this.selectedAuthor })
+      });
+      await this.loadAuthors();
+      this.closeModal();
     },
     async deleteAuthor() {
       const token = localStorage.getItem('token');
@@ -140,10 +177,24 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({author: {id: this.selectedAuthor.id}})
-      })
-      await this.loadAuthors()
-      this.closeModal()
+        body: JSON.stringify({ author: { id: this.selectedAuthor.id } })
+      });
+      await this.loadAuthors();
+      this.closeModal();
+    },
+    async deleteSelectedAuthors() {
+      if (!this.selectedIds.length) return;
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:3000/proxy/remove-author.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ author: { id: this.selectedIds } })
+      });
+      this.selectedIds = [];
+      await this.loadAuthors();
     }
   }
 }
@@ -161,30 +212,73 @@ export default {
   margin-bottom: 1rem;
 }
 
+.top-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .btn.add {
-  margin-bottom: 1.5rem;
   background-color: #10b981;
   color: white;
 }
 
-.authors-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+.btn.delete-selected {
+  background-color: #ef4444;
+  color: white;
 }
 
-.author-card {
-  background-color: #f3f4f6;
+.table-container {
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  padding: 1rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
+  overflow-x: auto;
 }
 
-.author-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+.table-header, .table-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 1fr 1fr;
+  align-items: center;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.table-header {
+  background-color: #f9fafb;
+  font-weight: bold;
+  padding: 0.5rem;
+}
+
+.table-header .cell input {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.25rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.table-row {
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.table-row:hover {
+  background-color: #f3f4f6;
+}
+
+.cell {
+  padding: 0.5rem;
+}
+
+.checkbox-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
 }
 
 .modal-overlay {
