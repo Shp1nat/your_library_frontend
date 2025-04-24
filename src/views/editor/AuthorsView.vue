@@ -218,14 +218,41 @@ export default {
   margin-bottom: 1rem;
 }
 
-.btn.add {
+.btn {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+/* Цвета при hover */
+.btn.add:hover {
   background-color: #10b981;
   color: white;
 }
 
-.btn.delete-selected {
+.btn.delete-selected:hover,
+.btn.delete:hover {
   background-color: #ef4444;
   color: white;
+}
+
+.btn.save:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .table-container {
@@ -299,6 +326,12 @@ export default {
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
 
+.modal h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
 .form-group {
   margin-bottom: 1rem;
 }
@@ -319,27 +352,5 @@ textarea {
   display: flex;
   justify-content: space-between;
   margin-top: 1rem;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn.save {
-  background-color: #2563eb;
-  color: white;
-}
-
-.btn.delete {
-  background-color: #ef4444;
-  color: white;
-}
-
-.btn:hover {
-  opacity: 0.9;
 }
 </style>
