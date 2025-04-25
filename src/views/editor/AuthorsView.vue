@@ -91,7 +91,7 @@ export default {
   },
   methods: {
     async loadAuthors() {
-      this.errorMessage = ''; // Очистка предыдущих сообщений об ошибках
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
       const conditions = [];
 
@@ -120,7 +120,7 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.error) {
-          this.errorMessage = responseJson.error; // Обработка ошибки
+          this.errorMessage = responseJson.error;
           this.authors = [];
         } else if (responseJson.result && responseJson.result.rows.length > 0) {
           const authorsRes = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
@@ -134,7 +134,7 @@ export default {
 
           const authorsData = await authorsRes.json();
           if (authorsData.error) {
-            this.errorMessage = authorsData.error; // Обработка ошибки
+            this.errorMessage = authorsData.error;
           } else {
             this.authors = authorsData.result.rows;
           }
@@ -143,7 +143,7 @@ export default {
         }
       } catch (err) {
         console.error('Ошибка при загрузке авторов:', err);
-        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+        this.errorMessage = 'Ошибка подключения к серверу';
         this.authors = [];
       }
     },
@@ -155,7 +155,7 @@ export default {
       return new Date(dateStr).toLocaleString();
     },
     async selectAuthor(id) {
-      this.errorMessage = ''; // Очистка предыдущих ошибок
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
       try {
         const res = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
@@ -169,14 +169,14 @@ export default {
 
         const data = await res.json();
         if (data.error) {
-          this.errorMessage = data.error; // Обработка ошибки
+          this.errorMessage = data.error;
         } else {
           this.selectedAuthor = data.result.author;
           this.isCreatingNew = false;
         }
       } catch (err) {
         console.error('Ошибка при получении автора:', err);
-        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+        this.errorMessage = 'Ошибка подключения к серверу';
       }
     },
     openNewAuthorModal() {
@@ -193,7 +193,7 @@ export default {
       this.isCreatingNew = false;
     },
     async saveAuthor() {
-      this.errorMessage = ''; // Очистка предыдущих ошибок
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
       try {
         const response = await fetch('http://localhost:3000/proxy/set-author.json', {
@@ -207,18 +207,18 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.error) {
-          this.errorMessage = responseJson.error; // Обработка ошибки
+          this.errorMessage = responseJson.error;
         } else {
           await this.loadAuthors();
           this.closeModal();
         }
       } catch (err) {
         console.error('Ошибка при сохранении автора:', err);
-        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+        this.errorMessage = 'Ошибка подключения к серверу';
       }
     },
     async deleteAuthor() {
-      this.errorMessage = ''; // Очистка предыдущих ошибок
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
       try {
         const response = await fetch('http://localhost:3000/proxy/remove-author.json', {
@@ -232,19 +232,19 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.error) {
-          this.errorMessage = responseJson.error; // Обработка ошибки
+          this.errorMessage = responseJson.error;
         } else {
           await this.loadAuthors();
           this.closeModal();
         }
       } catch (err) {
         console.error('Ошибка при удалении автора:', err);
-        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+        this.errorMessage = 'Ошибка подключения к серверу';
       }
     },
     async deleteSelectedAuthors() {
       if (!this.selectedIds.length) return;
-      this.errorMessage = ''; // Очистка предыдущих ошибок
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
       try {
         const response = await fetch('http://localhost:3000/proxy/remove-author.json', {
@@ -258,14 +258,14 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.error) {
-          this.errorMessage = responseJson.error; // Обработка ошибки
+          this.errorMessage = responseJson.error;
         } else {
           this.selectedIds = [];
           await this.loadAuthors();
         }
       } catch (err) {
         console.error('Ошибка при удалении выбранных авторов:', err);
-        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+        this.errorMessage = 'Ошибка подключения к серверу';
       }
     },
     goBack() {

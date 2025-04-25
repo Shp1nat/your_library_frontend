@@ -12,6 +12,10 @@
       </div>
     </div>
 
+    <div v-if="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
     <div class="table-container">
       <div class="table-header">
         <div class="cell checkbox-cell"></div>
@@ -62,7 +66,8 @@ export default {
       isCreatingNew: false,
       sortDir: 'asc',
       selectedIds: [],
-      searchName: ''
+      searchName: '',
+      errorMessage: ''
     }
   },
   async mounted() {
@@ -70,6 +75,7 @@ export default {
   },
   methods: {
     async loadGenres() {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
       const conditions = [];
 
@@ -77,34 +83,47 @@ export default {
         conditions.push({ var: 'name', operator: 'contain', value: this.searchName });
       }
 
-      const response = await fetch('http://localhost:3000/proxy/get-genre-ids.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          conditions,
-          main_cond: 'and',
-          search: '',
-          sort: 'updatedAt',
-          sort_dir: this.sortDir
-        })
-      });
-
-      const responseJson = await response.json();
-      if (responseJson.result.rows.length > 0) {
-        const genresRes = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
+      try {
+        const response = await fetch('http://localhost:3000/proxy/get-genre-ids.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(responseJson.result)
+          body: JSON.stringify({
+            conditions,
+            main_cond: 'and',
+            search: '',
+            sort: 'updatedAt',
+            sort_dir: this.sortDir
+          })
         });
-        const genresData = await genresRes.json();
-        this.genres = genresData.result.rows;
-      } else {
+
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+          this.genres = [];
+        } else if (responseJson.result.rows.length > 0) {
+          const genresRes = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(responseJson.result)
+          });
+          const genresData = await genresRes.json();
+          if (genresData.error) {
+            this.errorMessage = genresData.error;
+          } else {
+            this.genres = genresData.result.rows;
+          }
+        } else {
+          this.genres = [];
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке жанров:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
         this.genres = [];
       }
     },
@@ -116,18 +135,27 @@ export default {
       return new Date(dateStr).toLocaleString();
     },
     async selectGenre(id) {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ genre: { id } })
-      });
-      const data = await res.json();
-      this.selectedGenre = data.result.genre;
-      this.isCreatingNew = false;
+      try {
+        const res = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ genre: { id } })
+        });
+        const data = await res.json();
+        if (data.error) {
+          this.errorMessage = data.error; // Обработка ошибки
+        } else {
+          this.selectedGenre = data.result.genre;
+        }
+      } catch (err) {
+        console.error('Ошибка при получении жанра:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     openNewGenreModal() {
       this.selectedGenre = {
@@ -141,44 +169,77 @@ export default {
       this.isCreatingNew = false;
     },
     async saveGenre() {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/set-genre.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ genre: this.selectedGenre })
-      });
-      await this.loadGenres();
-      this.closeModal();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/set-genre.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ genre: this.selectedGenre })
+        });
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+        } else {
+          await this.loadGenres();
+          this.closeModal();
+        }
+      } catch (err) {
+        console.error('Ошибка при сохранении жанра:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     async deleteGenre() {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/remove-genre.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ genre: { id: this.selectedGenre.id } })
-      });
-      await this.loadGenres();
-      this.closeModal();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/remove-genre.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ genre: { id: this.selectedGenre.id } })
+        });
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+        } else {
+          await this.loadGenres();
+          this.closeModal();
+        }
+      } catch (err) {
+        console.error('Ошибка при удалении жанра:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     async deleteSelectedGenres() {
       if (!this.selectedIds.length) return;
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/remove-genre.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ genre: { id: this.selectedIds } })
-      });
-      this.selectedIds = [];
-      await this.loadGenres();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/remove-genre.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ genre: { id: this.selectedIds } })
+        });
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+        } else {
+          this.selectedIds = [];
+          await this.loadGenres();
+        }
+      } catch (err) {
+        console.error('Ошибка при удалении выбранных жанров:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     goBack() {
       this.$router.push('/editor');
@@ -190,6 +251,18 @@ export default {
 <style scoped>
 .editor-container {
   padding: 2rem;
+}
+
+.error-message {
+  background-color: #ffe0e0;
+  color: #8b0000;
+  padding: 10px;
+  border: 1px solid #ffb3b3;
+  border-radius: 5px;
+  margin: 10px 0;
+  font-weight: bold;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
 }
 
 .header-row {
