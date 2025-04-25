@@ -43,7 +43,6 @@
         <div v-if="errorMessage" class="error-message">
           {{ errorMessage }}
         </div>
-
         <div class="form-group">
           <label>Имя:</label>
           <input v-model="selectedAuthor.name" />

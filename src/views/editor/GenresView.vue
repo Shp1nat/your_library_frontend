@@ -12,10 +12,6 @@
       </div>
     </div>
 
-    <div v-if="errorMessage" class="error-message">
-      {{ errorMessage }}
-    </div>
-
     <div class="table-container">
       <div class="table-header">
         <div class="cell checkbox-cell"></div>
@@ -40,6 +36,9 @@
     <div v-if="selectedGenre" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <h2>{{ isCreatingNew ? 'Добавление жанра' : 'Редактирование жанра' }}</h2>
+        <div v-if="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
         <div class="form-group">
           <label>Название:</label>
           <input v-model="selectedGenre.name" />
