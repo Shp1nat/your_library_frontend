@@ -6,8 +6,10 @@
     </div>
 
     <div class="top-bar">
-      <button class="btn add" @click="openNewGenreModal">Добавить жанр</button>
-      <button class="btn delete-selected" @click="deleteSelectedGenres" :disabled="!selectedIds.length">Удалить выбранные</button>
+      <div class="button-group-right">
+        <button class="btn add" @click="openNewGenreModal">Добавить жанр</button>
+        <button class="btn delete-selected" @click="deleteSelectedGenres" :disabled="!selectedIds.length">Удалить выбранные</button>
+      </div>
     </div>
 
     <div class="table-container">
@@ -173,7 +175,7 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({genre: {id: this.selectedIds}})
+        body: JSON.stringify({ genre: { id: this.selectedIds } })
       });
       this.selectedIds = [];
       await this.loadGenres();
@@ -192,8 +194,9 @@ export default {
 
 .header-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 1rem;
   margin-bottom: 1rem;
   position: relative;
 }
@@ -207,11 +210,15 @@ export default {
   color: #1f2937;
 }
 
-
 .top-bar {
   display: flex;
-  gap: 1rem;
+  justify-content: flex-end;
   margin-bottom: 1rem;
+}
+
+.button-group-right {
+  display: flex;
+  gap: 1rem;
 }
 
 .btn {
