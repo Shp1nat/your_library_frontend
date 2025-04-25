@@ -12,10 +12,6 @@
       </div>
     </div>
 
-    <div v-if="errorMessage" class="error-message">
-      {{ errorMessage }}
-    </div>
-
     <div class="table-container">
       <div class="table-header">
         <div class="cell checkbox-cell"></div>
@@ -44,6 +40,10 @@
     <div v-if="selectedAuthor" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <h2>{{ isCreatingNew ? 'Добавление автора' : 'Редактирование автора' }}</h2>
+        <div v-if="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+
         <div class="form-group">
           <label>Имя:</label>
           <input v-model="selectedAuthor.name" />
@@ -83,7 +83,7 @@ export default {
         lastname: '',
         patronymic: ''
       },
-      errorMessage: '', // Переменная для ошибок
+      errorMessage: ''
     }
   },
   async mounted() {
