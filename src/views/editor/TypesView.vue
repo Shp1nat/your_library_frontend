@@ -36,6 +36,9 @@
     <div v-if="selectedType" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <h2>{{ isCreatingNew ? 'Добавление типа' : 'Редактирование типа' }}</h2>
+        <div v-if="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
         <div class="form-group">
           <label>Название:</label>
           <input v-model="selectedType.name" />
@@ -62,7 +65,8 @@ export default {
       isCreatingNew: false,
       sortDir: 'asc',
       selectedIds: [],
-      searchName: ''
+      searchName: '',
+      errorMessage: ''
     }
   },
   async mounted() {
@@ -70,6 +74,7 @@ export default {
   },
   methods: {
     async loadTypes() {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
       const conditions = [];
 
@@ -77,34 +82,47 @@ export default {
         conditions.push({ var: 'name', operator: 'contain', value: this.searchName });
       }
 
-      const response = await fetch('http://localhost:3000/proxy/get-type-ids.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          conditions,
-          main_cond: 'and',
-          search: '',
-          sort: 'updatedAt',
-          sort_dir: this.sortDir
-        })
-      });
-
-      const responseJson = await response.json();
-      if (responseJson.result.rows.length > 0) {
-        const typesRes = await fetch('http://localhost:3000/proxy/get-type-ids-out.json', {
+      try {
+        const response = await fetch('http://localhost:3000/proxy/get-type-ids.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(responseJson.result)
+          body: JSON.stringify({
+            conditions,
+            main_cond: 'and',
+            search: '',
+            sort: 'updatedAt',
+            sort_dir: this.sortDir
+          })
         });
-        const typesData = await typesRes.json();
-        this.types = typesData.result.rows;
-      } else {
+
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+          this.types = [];
+        } else if (responseJson.result.rows.length > 0) {
+          const typesRes = await fetch('http://localhost:3000/proxy/get-type-ids-out.json', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(responseJson.result)
+          });
+          const typesData = await typesRes.json();
+          if (typesData.error) {
+            this.errorMessage = typesData.error;
+          } else {
+            this.types = typesData.result.rows;
+          }
+        } else {
+          this.types = [];
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке типов:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
         this.types = [];
       }
     },
@@ -116,18 +134,27 @@ export default {
       return new Date(dateStr).toLocaleString();
     },
     async selectType(id) {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/proxy/get-type-ids-out.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: { id } })
-      });
-      const data = await res.json();
-      this.selectedType = data.result.type;
-      this.isCreatingNew = false;
+      try {
+        const res = await fetch('http://localhost:3000/proxy/get-type-ids-out.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: { id } })
+        });
+        const data = await res.json();
+        if (data.error) {
+          this.errorMessage = data.error; // Обработка ошибки
+        } else {
+          this.selectedType = data.result.type;
+        }
+      } catch (err) {
+        console.error('Ошибка при получении типа:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     openNewTypeModal() {
       this.selectedType = {
@@ -141,44 +168,77 @@ export default {
       this.isCreatingNew = false;
     },
     async saveType() {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/set-type.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: this.selectedType })
-      });
-      await this.loadTypes();
-      this.closeModal();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/set-type.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: this.selectedType })
+        });
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+        } else {
+          await this.loadTypes();
+          this.closeModal();
+        }
+      } catch (err) {
+        console.error('Ошибка при сохранении типа:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     async deleteType() {
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/remove-type.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: { id: this.selectedType.id } })
-      });
-      await this.loadTypes();
-      this.closeModal();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/remove-type.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: { id: this.selectedType.id } })
+        });
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+        } else {
+          await this.loadTypes();
+          this.closeModal();
+        }
+      } catch (err) {
+        console.error('Ошибка при удалении типа:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     async deleteSelectedTypes() {
       if (!this.selectedIds.length) return;
+      this.errorMessage = '';
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/remove-type.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: { id: this.selectedIds } })
-      });
-      this.selectedIds = [];
-      await this.loadTypes();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/remove-type.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: { id: this.selectedIds } })
+        });
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error;
+        } else {
+          this.selectedIds = [];
+          await this.loadTypes();
+        }
+      } catch (err) {
+        console.error('Ошибка при удалении выбранных типов:', err);
+        this.errorMessage = 'Ошибка подключения к серверу';
+      }
     },
     goBack() {
       this.$router.push('/editor');
@@ -190,6 +250,18 @@ export default {
 <style scoped>
 .editor-container {
   padding: 2rem;
+}
+
+.error-message {
+  background-color: #ffe0e0;
+  color: #8b0000;
+  padding: 10px;
+  border: 1px solid #ffb3b3;
+  border-radius: 5px;
+  margin: 10px 0;
+  font-weight: bold;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
 }
 
 .header-row {
