@@ -6,8 +6,10 @@
     </div>
 
     <div class="top-bar">
-      <button class="btn add" @click="openNewAuthorModal">Добавить автора</button>
-      <button class="btn delete-selected" @click="deleteSelectedAuthors" :disabled="!selectedIds.length">Удалить выбранных</button>
+      <div class="button-group-right">
+        <button class="btn add" @click="openNewAuthorModal">Добавить автора</button>
+        <button class="btn delete-selected" @click="deleteSelectedAuthors" :disabled="!selectedIds.length">Удалить выбранные</button>
+      </div>
     </div>
 
     <div class="table-container">
@@ -213,8 +215,9 @@ export default {
 
 .header-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 1rem;
   margin-bottom: 1rem;
   position: relative;
 }
@@ -230,8 +233,13 @@ export default {
 
 .top-bar {
   display: flex;
-  gap: 1rem;
+  justify-content: flex-end;
   margin-bottom: 1rem;
+}
+
+.button-group-right {
+  display: flex;
+  gap: 1rem;
 }
 
 .btn {
