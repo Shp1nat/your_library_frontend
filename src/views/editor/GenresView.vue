@@ -1,6 +1,9 @@
 <template>
   <div class="editor-container">
-    <h1 class="title">Жанры</h1>
+    <div class="header-row">
+      <h1 class="title">Жанры</h1>
+      <button class="btn back-button" @click="goBack">⬅ Назад</button>
+    </div>
 
     <div class="top-bar">
       <button class="btn add" @click="openNewGenreModal">Добавить жанр</button>
@@ -174,22 +177,30 @@ export default {
       });
       this.selectedIds = [];
       await this.loadGenres();
+    },
+    goBack() {
+      this.$router.push('/editor');
     }
   }
 }
 </script>
 
 <style scoped>
-/* Оформление такое же как в редакторе авторов */
 .editor-container {
   padding: 2rem;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .title {
   font-size: 2rem;
   font-weight: bold;
   color: #1f2937;
-  margin-bottom: 1rem;
 }
 
 .top-bar {
@@ -206,7 +217,7 @@ export default {
   border-radius: 6px;
   border: 1px solid #d1d5db;
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .btn:hover {
@@ -232,6 +243,19 @@ export default {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn.back-button {
+  font-weight: 500;
+  color: #374151;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+}
+
+.btn.back-button:hover {
+  color: #111827;
+  background-color: #e5e7eb;
+  transform: translateX(-2px);
 }
 
 .table-container {
