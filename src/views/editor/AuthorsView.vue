@@ -12,6 +12,10 @@
       </div>
     </div>
 
+    <div v-if="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
     <div class="table-container">
       <div class="table-header">
         <div class="cell checkbox-cell"></div>
@@ -78,7 +82,8 @@ export default {
         name: '',
         lastname: '',
         patronymic: ''
-      }
+      },
+      errorMessage: '', // Переменная для ошибок
     }
   },
   async mounted() {
@@ -86,44 +91,59 @@ export default {
   },
   methods: {
     async loadAuthors() {
+      this.errorMessage = ''; // Очистка предыдущих сообщений об ошибках
       const token = localStorage.getItem('token');
       const conditions = [];
 
       for (const field in this.searchFields) {
-        const value = this.searchFields[field]
+        const value = this.searchFields[field];
         if (value) {
           conditions.push({ var: field, operator: 'contain', value });
         }
       }
 
-      const response = await fetch('http://localhost:3000/proxy/get-author-ids.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          conditions,
-          main_cond: 'and',
-          search: '',
-          sort: 'updatedAt',
-          sort_dir: this.sortDir
-        })
-      });
-
-      const responseJson = await response.json();
-      if (responseJson.result.rows.length > 0) {
-        const authorsRes = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
+      try {
+        const response = await fetch('http://localhost:3000/proxy/get-author-ids.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(responseJson.result)
+          body: JSON.stringify({
+            conditions,
+            main_cond: 'and',
+            search: '',
+            sort: 'updatedAt',
+            sort_dir: this.sortDir
+          })
         });
-        const authorsData = await authorsRes.json();
-        this.authors = authorsData.result.rows;
-      } else {
+
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error; // Обработка ошибки
+          this.authors = [];
+        } else if (responseJson.result && responseJson.result.rows.length > 0) {
+          const authorsRes = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(responseJson.result)
+          });
+
+          const authorsData = await authorsRes.json();
+          if (authorsData.error) {
+            this.errorMessage = authorsData.error; // Обработка ошибки
+          } else {
+            this.authors = authorsData.result.rows;
+          }
+        } else {
+          this.authors = [];
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке авторов:', err);
+        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
         this.authors = [];
       }
     },
@@ -135,18 +155,29 @@ export default {
       return new Date(dateStr).toLocaleString();
     },
     async selectAuthor(id) {
+      this.errorMessage = ''; // Очистка предыдущих ошибок
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ author: { id } })
-      });
-      const data = await res.json();
-      this.selectedAuthor = data.result.author;
-      this.isCreatingNew = false;
+      try {
+        const res = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ author: { id } })
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          this.errorMessage = data.error; // Обработка ошибки
+        } else {
+          this.selectedAuthor = data.result.author;
+          this.isCreatingNew = false;
+        }
+      } catch (err) {
+        console.error('Ошибка при получении автора:', err);
+        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+      }
     },
     openNewAuthorModal() {
       this.selectedAuthor = {
@@ -162,44 +193,80 @@ export default {
       this.isCreatingNew = false;
     },
     async saveAuthor() {
+      this.errorMessage = ''; // Очистка предыдущих ошибок
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/set-author.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ author: this.selectedAuthor })
-      });
-      await this.loadAuthors();
-      this.closeModal();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/set-author.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ author: this.selectedAuthor })
+        });
+
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error; // Обработка ошибки
+        } else {
+          await this.loadAuthors();
+          this.closeModal();
+        }
+      } catch (err) {
+        console.error('Ошибка при сохранении автора:', err);
+        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+      }
     },
     async deleteAuthor() {
+      this.errorMessage = ''; // Очистка предыдущих ошибок
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/remove-author.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ author: { id: this.selectedAuthor.id } })
-      });
-      await this.loadAuthors();
-      this.closeModal();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/remove-author.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ author: { id: this.selectedAuthor.id } })
+        });
+
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error; // Обработка ошибки
+        } else {
+          await this.loadAuthors();
+          this.closeModal();
+        }
+      } catch (err) {
+        console.error('Ошибка при удалении автора:', err);
+        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+      }
     },
     async deleteSelectedAuthors() {
       if (!this.selectedIds.length) return;
+      this.errorMessage = ''; // Очистка предыдущих ошибок
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3000/proxy/remove-author.json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ author: { id: this.selectedIds } })
-      });
-      this.selectedIds = [];
-      await this.loadAuthors();
+      try {
+        const response = await fetch('http://localhost:3000/proxy/remove-author.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ author: { id: this.selectedIds } })
+        });
+
+        const responseJson = await response.json();
+        if (responseJson.error) {
+          this.errorMessage = responseJson.error; // Обработка ошибки
+        } else {
+          this.selectedIds = [];
+          await this.loadAuthors();
+        }
+      } catch (err) {
+        console.error('Ошибка при удалении выбранных авторов:', err);
+        this.errorMessage = 'Ошибка подключения к серверу'; // Общая ошибка
+      }
     },
     goBack() {
       this.$router.push('/editor');
@@ -211,6 +278,18 @@ export default {
 <style scoped>
 .editor-container {
   padding: 2rem;
+}
+
+.error-message {
+  background-color: #ffe0e0;
+  color: #8b0000;
+  padding: 10px;
+  border: 1px solid #ffb3b3;
+  border-radius: 5px;
+  margin: 10px 0;
+  font-weight: bold;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
 }
 
 .header-row {
