@@ -1,8 +1,8 @@
 <template>
   <div class="editor-container">
     <div class="header-row">
-      <h1 class="title">Жанры</h1>
       <button class="btn back-button" @click="goBack">⬅ Назад</button>
+      <h1 class="title">Жанры</h1>
     </div>
 
     <div class="top-bar">
@@ -173,7 +173,7 @@ export default {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ genre: { id: this.selectedIds } })
+        body: JSON.stringify({genre: {id: this.selectedIds}})
       });
       this.selectedIds = [];
       await this.loadGenres();
@@ -192,8 +192,9 @@ export default {
 
 .header-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
