@@ -1,5 +1,335 @@
 <template>
-  <div><h2>
-    Редактор жанров (в разработке)
-  </h2></div>
+  <div class="editor-container">
+    <h1 class="title">Жанры</h1>
+
+    <div class="top-bar">
+      <button class="btn add" @click="openNewGenreModal">Добавить жанр</button>
+      <button class="btn delete-selected" @click="deleteSelectedGenres" :disabled="!selectedIds.length">Удалить выбранные</button>
+    </div>
+
+    <div class="table-container">
+      <div class="table-header">
+        <div class="cell checkbox-cell"></div>
+        <div class="cell">Название <input v-model="searchName" @input="loadGenres" /></div>
+        <div class="cell sortable" @click="toggleSort">Последнее изменение {{ sortDir === 'asc' ? '↑' : '↓' }}</div>
+      </div>
+
+      <div
+          v-for="genre in genres"
+          :key="genre.id"
+          class="table-row"
+          @click="selectGenre(genre.id)"
+      >
+        <div class="cell checkbox-cell" @click.stop>
+          <input type="checkbox" :value="genre.id" v-model="selectedIds" />
+        </div>
+        <div class="cell">{{ genre.name }}</div>
+        <div class="cell">{{ formatDate(genre.updatedAt) }}</div>
+      </div>
+    </div>
+
+    <div v-if="selectedGenre" class="modal-overlay" @click.self="closeModal">
+      <div class="modal">
+        <h2>{{ isCreatingNew ? 'Добавление жанра' : 'Редактирование жанра' }}</h2>
+        <div class="form-group">
+          <label>Название:</label>
+          <input v-model="selectedGenre.name" />
+        </div>
+        <div class="form-group">
+          <label>Описание:</label>
+          <textarea v-model="selectedGenre.description"></textarea>
+        </div>
+        <div class="actions">
+          <button @click="saveGenre" class="btn save">Сохранить</button>
+          <button v-if="!isCreatingNew" @click="deleteGenre" class="btn delete">Удалить</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
+
+<script>
+export default {
+  data() {
+    return {
+      genres: [],
+      selectedGenre: null,
+      isCreatingNew: false,
+      sortDir: 'asc',
+      selectedIds: [],
+      searchName: ''
+    }
+  },
+  async mounted() {
+    await this.loadGenres();
+  },
+  methods: {
+    async loadGenres() {
+      const token = localStorage.getItem('token');
+      const conditions = [];
+
+      if (this.searchName) {
+        conditions.push({ var: 'name', operator: 'contain', value: this.searchName });
+      }
+
+      const response = await fetch('http://localhost:3000/proxy/get-genre-ids.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          conditions,
+          main_cond: 'and',
+          search: '',
+          sort: 'updatedAt',
+          sort_dir: this.sortDir
+        })
+      });
+
+      const responseJson = await response.json();
+      if (responseJson.result.rows.length > 0) {
+        const genresRes = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(responseJson.result)
+        });
+        const genresData = await genresRes.json();
+        this.genres = genresData.result.rows;
+      } else {
+        this.genres = [];
+      }
+    },
+    toggleSort() {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      this.loadGenres();
+    },
+    formatDate(dateStr) {
+      return new Date(dateStr).toLocaleString();
+    },
+    async selectGenre(id) {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ genre: { id } })
+      });
+      const data = await res.json();
+      this.selectedGenre = data.result.genre;
+      this.isCreatingNew = false;
+    },
+    openNewGenreModal() {
+      this.selectedGenre = {
+        name: '',
+        description: ''
+      };
+      this.isCreatingNew = true;
+    },
+    closeModal() {
+      this.selectedGenre = null;
+      this.isCreatingNew = false;
+    },
+    async saveGenre() {
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:3000/proxy/set-genre.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ genre: this.selectedGenre })
+      });
+      await this.loadGenres();
+      this.closeModal();
+    },
+    async deleteGenre() {
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:3000/proxy/remove-genre.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ genre: { id: this.selectedGenre.id } })
+      });
+      await this.loadGenres();
+      this.closeModal();
+    },
+    async deleteSelectedGenres() {
+      if (!this.selectedIds.length) return;
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:3000/proxy/remove-genre.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ genre: { id: this.selectedIds } })
+      });
+      this.selectedIds = [];
+      await this.loadGenres();
+    }
+  }
+}
+</script>
+
+<style scoped>
+/* Оформление такое же как в редакторе авторов */
+.editor-container {
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.top-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.btn {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+.btn.add:hover {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn.delete-selected:hover,
+.btn.delete:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn.save:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-container {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.table-header, .table-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr;
+  align-items: center;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.table-header {
+  background-color: #f9fafb;
+  font-weight: bold;
+  padding: 0.5rem;
+}
+
+.table-header .cell input {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.25rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.table-row {
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.table-row:hover {
+  background-color: #f3f4f6;
+}
+
+.cell {
+  padding: 0.5rem;
+}
+
+.checkbox-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+textarea {
+  resize: none;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+</style>
