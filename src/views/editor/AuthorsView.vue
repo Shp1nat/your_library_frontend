@@ -2,7 +2,7 @@
   <div class="editor-container">
     <div class="header-row">
       <button class="btn back-button" @click="goBack">⬅ Назад</button>
-      <h1 class="title">Авторы</h1>
+      <h1 class="title">Редактор авторов</h1>
     </div>
 
     <div class="top-bar">
@@ -213,13 +213,16 @@ export default {
 
 .header-row {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
   margin-bottom: 1rem;
+  position: relative;
 }
 
 .title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 2rem;
   font-weight: bold;
   color: #1f2937;
@@ -246,7 +249,6 @@ export default {
   transform: scale(1.05);
 }
 
-/* Цвета при hover */
 .btn.add:hover {
   background-color: #10b981;
   color: white;
