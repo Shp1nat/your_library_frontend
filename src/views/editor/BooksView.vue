@@ -221,6 +221,63 @@ export default {
         } else {
           this.selectedBook = data.result.book;
           this.isCreatingNew = false;
+
+          if (this.selectedBook.genres && this.selectedBook.genres.every(g => typeof g === 'object' && g !== null && g.id)) {
+            this.availableGenres = [...this.selectedBook.genres];
+          } else if (this.selectedBook.genres && this.selectedBook.genres.length > 0) {
+            const genreIds = this.selectedBook.genres.map(g => ({ id: g }));
+            const genresRes = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ genre: genreIds })
+            });
+            const genresData = await genresRes.json();
+            this.availableGenres = genresData.result?.rows || [];
+            this.selectedBook.genres = this.availableGenres.map(g => ({ id: g.id }));
+          } else {
+            this.availableGenres = [];
+          }
+
+          if (this.selectedBook.authors && this.selectedBook.authors.every(a => typeof a === 'object' && a !== null && a.id)) {
+            this.availableAuthors = [...this.selectedBook.authors];
+          } else if (this.selectedBook.authors && this.selectedBook.authors.length > 0) {
+            const authorIds = this.selectedBook.authors.map(a => ({ id: a }));
+            const authorsRes = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ author: authorIds })
+            });
+            const authorsData = await authorsRes.json();
+            this.availableAuthors = authorsData.result?.rows || [];
+            this.selectedBook.authors = this.availableAuthors.map(a => ({ id: a.id }));
+          } else {
+            this.availableAuthors = [];
+          }
+
+          if (this.selectedBook.types && this.selectedBook.types.every(t => typeof t === 'object' && t !== null && t.id)) {
+            this.availableTypes = [...this.selectedBook.types];
+          } else if (this.selectedBook.types && this.selectedBook.types.length > 0) {
+            const typeIds = this.selectedBook.types.map(t => ({ id: t }));
+            const typesRes = await fetch('http://localhost:3000/proxy/get-type-ids-out.json', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ type: typeIds })
+            });
+            const typesData = await typesRes.json();
+            this.availableTypes = typesData.result?.rows || [];
+            this.selectedBook.types = this.availableTypes.map(t => ({ id: t.id }));
+          } else {
+            this.availableTypes = [];
+          }
         }
       } catch (err) {
         console.error('Ошибка при получении книги:', err);
@@ -237,6 +294,12 @@ export default {
         types: []
       };
       this.isCreatingNew = true;
+      this.authorSearch = '';
+      this.genreSearch = '';
+      this.typeSearch = '';
+      this.searchAuthors();
+      this.searchGenres();
+      this.searchTypes();
     },
     closeModal() {
       this.selectedBook = null;
