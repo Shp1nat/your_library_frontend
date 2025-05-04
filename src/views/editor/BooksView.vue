@@ -16,11 +16,19 @@
       <div class="table-header">
         <div class="cell checkbox-cell"></div>
         <div class="cell">Название <input v-model="searchFields.name" @input="loadBooks" /></div>
-        <div class="cell year-filter">
-          Год от <input type="number" v-model="searchFields.year_from" @input="loadBooks" placeholder="От" />
-          Год до <input type="number" v-model="searchFields.year_to" @input="loadBooks" placeholder="До" />
+        <div class="cell year-column">
+          <div class="column-header sortable" @click="toggleYearSort">
+            <span style="margin-right: 0.3rem;">Год</span>
+            <span v-if="sortField === 'year'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+          <div class="year-filter">
+            <input type="number" v-model="searchFields.year_from" @input="loadBooks" placeholder="От" />
+            <input type="number" v-model="searchFields.year_to" @input="loadBooks" placeholder="До" />
+          </div>
         </div>
-        <div class="cell sortable" @click="toggleSort">Последнее изменение {{ sortDir === 'asc' ? '↑' : '↓' }}</div>
+        <div class="cell sortable" @click="toggleSort">
+          Последнее изменение <span v-if="sortField === 'updatedAt'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+        </div>
       </div>
 
       <div
@@ -121,6 +129,7 @@ export default {
       selectedBook: null,
       isCreatingNew: false,
       sortDir: 'asc',
+      sortField: 'updatedAt',
       selectedIds: [],
       searchFields: {
         name: '',
@@ -210,6 +219,12 @@ export default {
       }
     },
     toggleSort() {
+      this.sortField = 'updatedAt';
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      this.loadBooks();
+    },
+    toggleYearSort() {
+      this.sortField = 'year';
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       this.loadBooks();
     },
@@ -642,6 +657,7 @@ export default {
 }
 
 input,
+.year-filter input,
 textarea,
 select {
   width: 100%;
@@ -649,6 +665,7 @@ select {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 1rem;
+  resize: none;
 }
 
 .actions {
@@ -662,14 +679,24 @@ select {
   user-select: none;
 }
 
+.year-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.column-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .year-filter {
   display: flex;
   flex-direction: row;
-}
-
-.year-filter input {
-  width: 80px;
-  margin-bottom: 0.25rem;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .top-bar {
