@@ -146,7 +146,8 @@ export default {
       for (const field in this.searchFields) {
         const value = this.searchFields[field];
         if (value) {
-          conditions.push({ var: field, operator: 'contain', value });
+          const operator = field === 'year'? 'equal' : 'contain';
+          conditions.push({ var: field, operator: operator, value });
         }
       }
 
