@@ -649,6 +649,17 @@ select {
   user-select: none;
 }
 
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.button-group-right {
+  display: flex;
+  gap: 1rem;
+}
+
 .multi-select {
   display: flex;
   flex-wrap: wrap;
