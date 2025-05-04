@@ -561,12 +561,6 @@ export default {
   margin-bottom: 1rem;
 }
 
-.multi-select .select-item.selected {
-  background-color: #e0f2f7; /* Светло-голубой фон */
-  color: #1e88e5; /* Синий текст */
-  font-weight: bold; /* Можно добавить жирный шрифт */
-}
-
 input,
 textarea,
 select {
@@ -581,5 +575,31 @@ select {
   display: flex;
   justify-content: space-between;
   margin-top: 1rem;
+}
+
+.multi-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.select-item {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #f9f9f9;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.select-item:hover {
+  background-color: #eee;
+}
+
+.select-item.selected {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
 }
 </style>
