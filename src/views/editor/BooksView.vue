@@ -644,6 +644,11 @@ select {
   margin-top: 1rem;
 }
 
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
 .multi-select {
   display: flex;
   flex-wrap: wrap;
