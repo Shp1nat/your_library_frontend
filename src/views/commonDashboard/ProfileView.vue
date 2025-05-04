@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import defaultAvatar from '@/assets/defaultAvatar.jpg';
+import defaultAvatar from '@/assets/defaultUserAvatar.jpg';
 export default {
   data() {
     return {

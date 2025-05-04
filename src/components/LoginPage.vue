@@ -53,7 +53,7 @@ export default {
         } else {
           localStorage.setItem('token', data.result.accessToken)
           localStorage.setItem('status', data.result.status)
-          this.$router.push('/dashboard/profile')
+          this.$router.push('/profile')
         }
       } catch (err) {
         console.error('Login error:', err)
@@ -64,7 +64,7 @@ export default {
       localStorage.setItem('token', this.tempToken)
       localStorage.setItem('status', role)
       this.showRoleModal = false
-      this.$router.push('/dashboard/profile')
+      this.$router.push('/profile')
     }
   }
 }

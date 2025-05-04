@@ -4,7 +4,23 @@
       <router-view />
     </main>
   </div>
+  <component :is="layout">
+    <router-view />
+  </component>
 </template>
+
+<script>
+import DashboardLayout from '@/layouts/DashboardLayout.vue'
+
+export default {
+  computed: {
+    layout() {
+      const layoutType = this.$route.meta.layout
+      return layoutType === 'dashboard' ? DashboardLayout : 'div'
+    }
+  }
+}
+</script>
 
 <style>
 * {
