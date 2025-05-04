@@ -16,7 +16,10 @@
       <div class="table-header">
         <div class="cell checkbox-cell"></div>
         <div class="cell">Название <input v-model="searchFields.name" @input="loadBooks" /></div>
-        <div class="cell">Год <input v-model="searchFields.year" @input="loadBooks" /></div>
+        <div class="cell year-filter">
+          Год от <input type="number" v-model="searchFields.year_from" @input="loadBooks" placeholder="От" />
+          Год до <input type="number" v-model="searchFields.year_to" @input="loadBooks" placeholder="До" />
+        </div>
         <div class="cell sortable" @click="toggleSort">Последнее изменение {{ sortDir === 'asc' ? '↑' : '↓' }}</div>
       </div>
 
@@ -121,7 +124,8 @@ export default {
       selectedIds: [],
       searchFields: {
         name: '',
-        year: ''
+        year_from: '',
+        year_to: ''
       },
       errorMessage: '',
 
@@ -146,8 +150,17 @@ export default {
       for (const field in this.searchFields) {
         const value = this.searchFields[field];
         if (value) {
-          const operator = field === 'year'? 'equal' : 'contain';
-          conditions.push({ var: field, operator: operator, value });
+          switch (field) {
+            case 'name':
+              conditions.push({ var: 'name', operator: 'contain', value });
+              break;
+            case 'year_from':
+              conditions.push({ var: 'year', operator: 'greater_or_equal', value });
+              break;
+            case 'year_to':
+              conditions.push({ var: 'year', operator: 'less_or_equal', value });
+              break;
+          }
         }
       }
 
@@ -647,6 +660,16 @@ select {
 .sortable {
   cursor: pointer;
   user-select: none;
+}
+
+.year-filter {
+  display: flex;
+  flex-direction: row;
+}
+
+.year-filter input {
+  width: 80px;
+  margin-bottom: 0.25rem;
 }
 
 .top-bar {
