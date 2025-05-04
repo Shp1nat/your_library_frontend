@@ -610,12 +610,24 @@ export default {
   overflow-x: auto;
 }
 
-.table-header,
+.table-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 1fr 1fr;
+  align-items: center;
+  border-bottom: 1px solid #d1d5db;
+}
+
 .table-row {
   display: grid;
   grid-template-columns: 40px 1fr 1fr 1fr 1fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.table-row:hover {
+  background-color: #f0f0f0;
 }
 
 .table-header {
