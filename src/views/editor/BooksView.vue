@@ -604,6 +604,40 @@ export default {
   transform: scale(1.05);
 }
 
+.btn.add:hover {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn.delete-selected:hover,
+.btn.delete:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn.save:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.back-button {
+  font-weight: 500;
+  color: #374151;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+}
+
+.btn.back-button:hover {
+  color: #111827;
+  background-color: #e5e7eb;
+  transform: translateX(-2px);
+}
+
 .table-container {
   border: 1px solid #d1d5db;
   border-radius: 8px;
