@@ -75,7 +75,7 @@
                 @click="toggleAuthor(author)"
                 :class="{ selected: selectedBook.authors.some(a => a.id === author.id) }"
             >
-              {{ author.lastname }} {{ author.name }}
+              {{ author.name }} {{ author.patronymic }} {{ author.lastname }}
             </div>
           </div>
         </div>
@@ -420,8 +420,12 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            conditions: this.authorSearch ? [{ var: 'name', operator: 'contain', value: this.authorSearch }] : [],
-            main_cond: 'and',
+            conditions: this.authorSearch ? [
+                { var: 'name', operator: 'contain', value: this.authorSearch },
+              { var: 'lastname', operator: 'contain', value: this.authorSearch },
+              { var: 'patronymic', operator: 'contain', value: this.authorSearch }
+            ] : [],
+            main_cond: 'or',
             search: '',
             sort: 'name',
             sort_dir: 'asc'
