@@ -338,6 +338,7 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.result?.rows?.length) {
+          responseJson.result.rows = responseJson.result.rows.slice(0, 10)
           const outRes = await fetch('http://localhost:3000/proxy/get-author-ids-out.json', {
             method: 'POST',
             headers: {
@@ -378,6 +379,7 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.result?.rows?.length) {
+          responseJson.result.rows = responseJson.result.rows.slice(0, 10)
           const outRes = await fetch('http://localhost:3000/proxy/get-genre-ids-out.json', {
             method: 'POST',
             headers: {
@@ -418,6 +420,7 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.result?.rows?.length) {
+          responseJson.result.rows = responseJson.result.rows.slice(0, 10)
           const outRes = await fetch('http://localhost:3000/proxy/get-type-ids-out.json', {
             method: 'POST',
             headers: {
