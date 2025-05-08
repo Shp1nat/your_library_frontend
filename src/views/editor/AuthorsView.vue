@@ -14,7 +14,9 @@
 
     <div class="table-container">
       <div class="table-header">
-        <div class="cell checkbox-cell"></div>
+        <div class="cell checkbox-cell">
+          <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
+        </div>
         <div class="cell">Фамилия <input v-model="searchFields.lastname" @input="loadAuthors" /></div>
         <div class="cell">Имя <input v-model="searchFields.name" @input="loadAuthors" /></div>
         <div class="cell">Отчество <input v-model="searchFields.patronymic" @input="loadAuthors" /></div>
@@ -83,6 +85,11 @@ export default {
         patronymic: ''
       },
       errorMessage: ''
+    }
+  },
+  computed: {
+    allSelected() {
+      return this.authors.length > 0 && this.selectedIds.length === this.authors.length;
     }
   },
   async mounted() {
@@ -265,6 +272,13 @@ export default {
       } catch (err) {
         console.error('Ошибка при удалении выбранных авторов:', err);
         this.errorMessage = 'Ошибка подключения к серверу';
+      }
+    },
+    toggleSelectAll(event) {
+      if (event.target.checked) {
+        this.selectedIds = this.authors.map(author => author.id);
+      } else {
+        this.selectedIds = [];
       }
     },
     goBack() {
