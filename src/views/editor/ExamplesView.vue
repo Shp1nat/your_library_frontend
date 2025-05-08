@@ -8,7 +8,11 @@
     <div class="top-bar">
       <div class="button-group-right">
         <button class="btn add" @click="openNewExampleModal">Добавить экземпляр</button>
-        <button class="btn delete-selected" @click="deleteSelectedExamples" :disabled="!selectedIds.length">Удалить выбранные</button>
+        <button
+            class="btn delete-selected"
+            @click="deleteSelectedExamples"
+            :disabled="!selectedIds.length"
+        >Удалить выбранные</button>
       </div>
     </div>
 
@@ -17,18 +21,10 @@
         <div class="cell checkbox-cell">
           <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
         </div>
-        <div class="cell">Описание <input v-model="searchFields.description" @input="loadExamples" /></div>
+        <div class="cell">Название книги <input v-model="searchFields.bookName" @input="loadExamples" /></div>
         <div class="cell">Год <input type="number" v-model="searchFields.year" @input="loadExamples" /></div>
-        <div class="cell">Количество <input type="number" v-model="searchFields.quantity" @input="loadExamples" /></div>
-        <div class="cell sortable" @click="toggleBookSort">
-          Книга <span v-if="sortField === 'book.name'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
-        </div>
-        <div class="cell sortable" @click="togglePublisherSort">
-          Издательство <span v-if="sortField === 'publisher.name'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
-        </div>
-        <div class="cell sortable" @click="toggleSort">
-          Последнее изменение <span v-if="sortField === 'updatedAt'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
-        </div>
+        <div class="cell">Доступно <input type="number" v-model="searchFields.availableCount" @input="loadExamples" /></div>
+        <div class="cell">Издательство <input v-model="searchFields.publisherName" @input="loadExamples" /></div>
       </div>
 
       <div
@@ -40,12 +36,10 @@
         <div class="cell checkbox-cell" @click.stop>
           <input type="checkbox" :value="example.id" v-model="selectedIds" />
         </div>
-        <div class="cell">{{ example.description }}</div>
-        <div class="cell">{{ example.year }}</div>
-        <div class="cell">{{ example.quantity }}</div>
         <div class="cell">{{ example.book?.name }}</div>
+        <div class="cell">{{ example.year }}</div>
+        <div class="cell">{{ example.availableCount }}</div>
         <div class="cell">{{ example.publisher?.name }}</div>
-        <div class="cell">{{ formatDate(example.updatedAt) }}</div>
       </div>
     </div>
 
@@ -63,19 +57,19 @@
           <input type="number" v-model="selectedExample.year" />
         </div>
         <div class="form-group">
-          <label>Количество:</label>
-          <input type="number" v-model="selectedExample.quantity" />
+          <label>Доступно:</label>
+          <input type="number" v-model="selectedExample.availableCount" />
         </div>
 
         <div class="form-group">
           <label>Книга:</label>
-          <input v-model="bookSearch" @input="searchBooks" placeholder="Поиск книг..." />
+          <input v-model="bookSearch" @input="searchBooks" placeholder="Поиск книги..." />
           <div class="single-select">
             <div
                 v-for="book in availableBooks"
                 :key="book.id"
                 class="select-item"
-                @click="setSelectedBook(book)"
+                @click="selectSingleBook(book)"
                 :class="{ selected: selectedExample.book?.id === book.id }"
             >
               {{ book.name }}
@@ -85,13 +79,13 @@
 
         <div class="form-group">
           <label>Издательство:</label>
-          <input v-model="publisherSearch" @input="searchPublishers" placeholder="Поиск издательств..." />
+          <input v-model="publisherSearch" @input="searchPublishers" placeholder="Поиск издательства..." />
           <div class="single-select">
             <div
                 v-for="publisher in availablePublishers"
                 :key="publisher.id"
                 class="select-item"
-                @click="setSelectedPublisher(publisher)"
+                @click="selectSinglePublisher(publisher)"
                 :class="{ selected: selectedExample.publisher?.id === publisher.id }"
             >
               {{ publisher.name }}
@@ -115,13 +109,12 @@ export default {
       examples: [],
       selectedExample: null,
       isCreatingNew: false,
-      sortDir: 'asc',
-      sortField: 'updatedAt',
       selectedIds: [],
       searchFields: {
-        description: '',
+        bookName: '',
         year: '',
-        quantity: ''
+        availableCount: '',
+        publisherName: ''
       },
       errorMessage: '',
 
@@ -130,7 +123,7 @@ export default {
 
       bookSearch: '',
       publisherSearch: ''
-    }
+    };
   },
   computed: {
     allSelected() {
@@ -146,21 +139,17 @@ export default {
       const token = localStorage.getItem('token');
       const conditions = [];
 
-      for (const field in this.searchFields) {
-        const value = this.searchFields[field];
-        if (value) {
-          switch (field) {
-            case 'description':
-              conditions.push({ var: 'description', operator: 'contain', value });
-              break;
-            case 'year':
-              conditions.push({ var: 'year', operator: 'equal', value });
-              break;
-            case 'quantity':
-              conditions.push({ var: 'quantity', operator: 'equal', value });
-              break;
-          }
-        }
+      if (this.searchFields.bookName) {
+        conditions.push({ var: 'book.name', operator: 'contain', value: this.searchFields.bookName });
+      }
+      if (this.searchFields.year) {
+        conditions.push({ var: 'year', operator: 'equal', value: this.searchFields.year });
+      }
+      if (this.searchFields.availableCount) {
+        conditions.push({ var: 'availableCount', operator: 'equal', value: this.searchFields.availableCount });
+      }
+      if (this.searchFields.publisherName) {
+        conditions.push({ var: 'publisher.name', operator: 'contain', value: this.searchFields.publisherName });
       }
 
       try {
@@ -174,8 +163,8 @@ export default {
             conditions,
             main_cond: 'and',
             search: '',
-            sort: this.sortField.includes('.') ? this.sortField : 'updatedAt',
-            sort_dir: this.sortDir
+            sort: 'year', // Default sort
+            sort_dir: 'asc'
           })
         });
 
@@ -208,24 +197,6 @@ export default {
         this.examples = [];
       }
     },
-    toggleSort() {
-      this.sortField = 'updatedAt';
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-      this.loadExamples();
-    },
-    toggleBookSort() {
-      this.sortField = 'book.name';
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-      this.loadExamples();
-    },
-    togglePublisherSort() {
-      this.sortField = 'publisher.name';
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-      this.loadExamples();
-    },
-    formatDate(dateStr) {
-      return new Date(dateStr).toLocaleString();
-    },
     async selectExample(id) {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
@@ -246,10 +217,8 @@ export default {
           this.selectedExample = data.result.example;
           this.isCreatingNew = false;
 
-          if (this.selectedExample.book && typeof this.selectedExample.book === 'object' && this.selectedExample.book !== null && this.selectedExample.book.id) {
-            this.availableBooks = [this.selectedExample.book];
-            this.bookSearch = this.selectedExample.book.name;
-          } else if (this.selectedExample.book) {
+          // Fetch related book if only ID is present
+          if (this.selectedExample.book && typeof this.selectedExample.book === 'number') {
             const bookRes = await fetch('http://localhost:3000/proxy/get-book-ids-out.json', {
               method: 'POST',
               headers: {
@@ -259,19 +228,11 @@ export default {
               body: JSON.stringify({ book: { id: this.selectedExample.book } })
             });
             const bookData = await bookRes.json();
-            this.availableBooks = bookData.result?.rows || [];
-            this.selectedExample.book = this.availableBooks[0] || null;
-            this.bookSearch = this.selectedExample.book?.name || '';
-          } else {
-            this.availableBooks = [];
-            this.bookSearch = '';
-            this.selectedExample.book = null;
+            this.selectedExample.book = bookData.result?.book || null;
           }
 
-          if (this.selectedExample.publisher && typeof this.selectedExample.publisher === 'object' && this.selectedExample.publisher !== null && this.selectedExample.publisher.id) {
-            this.availablePublishers = [this.selectedExample.publisher];
-            this.publisherSearch = this.selectedExample.publisher.name;
-          } else if (this.selectedExample.publisher) {
+          // Fetch related publisher if only ID is present
+          if (this.selectedExample.publisher && typeof this.selectedExample.publisher === 'number') {
             const publisherRes = await fetch('http://localhost:3000/proxy/get-publisher-ids-out.json', {
               method: 'POST',
               headers: {
@@ -281,13 +242,7 @@ export default {
               body: JSON.stringify({ publisher: { id: this.selectedExample.publisher } })
             });
             const publisherData = await publisherRes.json();
-            this.availablePublishers = publisherData.result?.rows || [];
-            this.selectedExample.publisher = this.availablePublishers[0] || null;
-            this.publisherSearch = this.selectedExample.publisher?.name || '';
-          } else {
-            this.availablePublishers = [];
-            this.publisherSearch = '';
-            this.selectedExample.publisher = null;
+            this.selectedExample.publisher = publisherData.result?.publisher || null;
           }
         }
       } catch (err) {
@@ -299,7 +254,7 @@ export default {
       this.selectedExample = {
         description: '',
         year: '',
-        quantity: '',
+        availableCount: 1,
         book: null,
         publisher: null
       };
@@ -316,18 +271,7 @@ export default {
     async saveExample() {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
-      const payload = {
-        example: {
-          description: this.selectedExample.description,
-          year: this.selectedExample.year,
-          quantity: this.selectedExample.quantity,
-          book: this.selectedExample.book?.id,
-          publisher: this.selectedExample.publisher?.id
-        }
-      };
-      if (!this.isCreatingNew && this.selectedExample.id) {
-        payload.example.id = this.selectedExample.id;
-      }
+      const exampleToSend = { ...this.selectedExample };
 
       try {
         const response = await fetch('http://localhost:3000/proxy/set-example.json', {
@@ -336,7 +280,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ example: exampleToSend })
         });
 
         const responseJson = await response.json();
@@ -422,7 +366,7 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.result?.rows?.length) {
-          responseJson.result.rows = responseJson.result.rows.slice(0, 10)
+          responseJson.result.rows = responseJson.result.rows.slice(0, 10);
           const outRes = await fetch('http://localhost:3000/proxy/get-book-ids-out.json', {
             method: 'POST',
             headers: {
@@ -442,7 +386,6 @@ export default {
         this.availableBooks = [];
       }
     },
-
     async searchPublishers() {
       const token = localStorage.getItem('token');
       try {
@@ -463,7 +406,7 @@ export default {
 
         const responseJson = await response.json();
         if (responseJson.result?.rows?.length) {
-          responseJson.result.rows = responseJson.result.rows.slice(0, 10)
+          responseJson.result.rows = responseJson.result.rows.slice(0, 10);
           const outRes = await fetch('http://localhost:3000/proxy/get-publisher-ids-out.json', {
             method: 'POST',
             headers: {
@@ -483,10 +426,10 @@ export default {
         this.availablePublishers = [];
       }
     },
-    setSelectedBook(book) {
+    selectSingleBook(book) {
       this.selectedExample.book = book;
     },
-    setSelectedPublisher(publisher) {
+    selectSinglePublisher(publisher) {
       this.selectedExample.publisher = publisher;
     },
     toggleSelectAll(event) {
@@ -500,7 +443,7 @@ export default {
       this.$router.push('/editor');
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -595,14 +538,17 @@ export default {
 
 .table-header {
   display: grid;
-  grid-template-columns: 40px 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 40px 2fr 1fr 1fr 2fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  font-weight: bold;
+  padding: 0.5rem;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 40px 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 40px 2fr 1fr 1fr 2fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
   cursor: pointer;
@@ -613,14 +559,11 @@ export default {
   background-color: #f0f0f0;
 }
 
-.table-header {
-  background-color: #f9fafb;
-  font-weight: bold;
-  padding: 0.5rem;
-}
-
 .cell {
   padding: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modal-overlay {
@@ -652,7 +595,6 @@ export default {
 }
 
 input,
-.year-filter input,
 textarea,
 select {
   width: 100%;
@@ -667,31 +609,6 @@ select {
   display: flex;
   justify-content: space-between;
   margin-top: 1rem;
-}
-
-.sortable {
-  cursor: pointer;
-  user-select: none;
-}
-
-.year-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.column-header {
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.year-filter {
-  display: flex;
-  flex-direction: row;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
 }
 
 .top-bar {
