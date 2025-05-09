@@ -36,7 +36,7 @@
         <div class="cell checkbox-cell" @click.stop>
           <input type="checkbox" :value="example.id" v-model="selectedIds" />
         </div>
-        <div class="cell">{{ example.book?.name }}</div>
+        <div class="cell">{{ example.name }}</div>
         <div class="cell">{{ example.year }}</div>
         <div class="cell">{{ example.availableCount }}</div>
         <div class="cell">{{ example.publisher?.name }}</div>
