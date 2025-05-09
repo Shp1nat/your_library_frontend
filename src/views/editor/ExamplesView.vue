@@ -135,14 +135,13 @@ export default {
       examples: [],
       selectedExample: null,
       isCreatingNew: false,
-      sortDir: 'desc', // Default sort direction
-      sortField: 'updatedAt', // Default sort field
+      sortDir: 'desc',
+      sortField: 'updatedAt',
       selectedIds: [],
       searchFields: {
         exampleName: '',
         year_from: '',
         year_to: '',
-        // Изменено: удалено availableCount, добавлены from/to
         availableCount_from: '',
         availableCount_to: '',
         publisherName: ''
@@ -178,31 +177,25 @@ export default {
         conditions.push({var: 'name', operator: 'contain', value: this.searchFields.exampleName});
       }
       if (this.searchFields.year_from !== '' && this.searchFields.year_from !== null) {
-        conditions.push({var: 'year', operator: 'greater_or_equal', value: parseInt(this.searchFields.year_from, 10)}); // Преобразование в число
+        conditions.push({var: 'year', operator: 'greater_or_equal', value: parseInt(this.searchFields.year_from, 10)});
       }
       if (this.searchFields.year_to !== '' && this.searchFields.year_to !== null) {
-        conditions.push({var: 'year', operator: 'less_or_equal', value: parseInt(this.searchFields.year_to, 10)}); // Преобразование в число
+        conditions.push({var: 'year', operator: 'less_or_equal', value: parseInt(this.searchFields.year_to, 10)});
       }
-      // Добавлено: фильтрация по диапазону availableCount
       if (this.searchFields.availableCount_from !== '' && this.searchFields.availableCount_from !== null) {
         conditions.push({
           var: 'availableCount',
           operator: 'greater_or_equal',
           value: parseInt(this.searchFields.availableCount_from, 10)
-        }); // Преобразование в число
+        });
       }
       if (this.searchFields.availableCount_to !== '' && this.searchFields.availableCount_to !== null) {
         conditions.push({
           var: 'availableCount',
           operator: 'less_or_equal',
           value: parseInt(this.searchFields.availableCount_to, 10)
-        }); // Преобразование в число
+        });
       }
-      // Удалена одиночная фильтрация по availableCount
-      // if (this.searchFields.availableCount !== '' && this.searchFields.availableCount !== null) {
-      //   conditions.push({ var: 'availableCount', operator: 'equal', value: this.searchFields.availableCount });
-      // }
-
       if (this.searchFields.publisherName) {
         conditions.push({var: 'publisherName', operator: 'contain', value: this.searchFields.publisherName});
       }
@@ -261,7 +254,6 @@ export default {
       }
       this.loadExamples();
     },
-    // Существующая функция сортировки для availableCount
     toggleAvailableCountSort() {
       if (this.sortField === 'availableCount') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -276,7 +268,7 @@ export default {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortField = 'updatedAt';
-        this.sortDir = 'desc'; // Default to desc for updatedAt
+        this.sortDir = 'desc';
       }
       this.loadExamples();
     },
@@ -299,8 +291,6 @@ export default {
         } else {
           this.selectedExample = data.result.example;
           this.isCreatingNew = false;
-
-          // Populate search fields and available lists for modal
           if (this.selectedExample.book) {
             this.availableBooks = [this.selectedExample.book];
             this.bookSearch = this.selectedExample.book.name || '';
@@ -325,7 +315,7 @@ export default {
     openNewExampleModal() {
       this.selectedExample = {
         description: '',
-        year: new Date().getFullYear(), // Default to current year
+        year: new Date().getFullYear(),
         availableCount: 1,
         book: null,
         publisher: null
@@ -335,9 +325,6 @@ export default {
       this.publisherSearch = '';
       this.availableBooks = [];
       this.availablePublishers = [];
-      // Optionally pre-fetch some books/publishers
-      // this.searchBooks();
-      // this.searchPublishers();
     },
     closeModal() {
       this.selectedExample = null;
@@ -503,11 +490,11 @@ export default {
     },
     selectSingleBook(book) {
       this.selectedExample.book = book;
-      this.bookSearch = book.name; // Update search input text
+      this.bookSearch = book.name;
     },
     selectSinglePublisher(publisher) {
       this.selectedExample.publisher = publisher;
-      this.publisherSearch = publisher.name; // Update search input text
+      this.publisherSearch = publisher.name;
     },
     toggleSelectAll(event) {
       if (event.target.checked) {
@@ -616,8 +603,6 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  /* Checkbox, Book Name, Year, Available, Publisher, UpdatedAt */
-  /* Ширина колонок скорректирована для фильтров "от" и "до" */
   grid-template-columns: 40px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
@@ -635,7 +620,7 @@ export default {
 }
 
 .table-row .cell {
-  padding: 0.75rem 0.5rem; /* Increased padding for rows */
+  padding: 0.75rem 0.5rem;
 }
 
 
@@ -647,26 +632,23 @@ export default {
   padding: 0.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* white-space: nowrap; Removed to allow wrapping in header if needed */
 }
 
-.table-row .cell { /* Ensure row cells are nowrap if desired, header can wrap */
+.table-row .cell {
   white-space: nowrap;
 }
 
 
 .header-filter-input {
-  margin-top: 5px; /* Отступ сверху */
+  margin-top: 5px;
   padding: 0.3rem 0.5rem;
   font-size: 0.9rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  width: 100%; /* Занимает всю доступную ширину */
-  box-sizing: border-box; /* Учитываем padding и border в ширине */
+  width: 100%;
+  box-sizing: border-box;
 }
 
-
-/* Общий стиль для колонок с фильтрацией по диапазону */
 .year-column,
 .available-column {
   display: flex;
@@ -678,15 +660,14 @@ export default {
   user-select: none;
   display: flex;
   align-items: center;
-  margin-bottom: 0.25rem; /* Space if filters are below */
+  margin-bottom: 0.25rem;
 }
 
-.cell > .sortable, .column-header.sortable { /* Ensure sortable text parts are clickable */
+.cell > .sortable, .column-header.sortable {
   cursor: pointer;
   user-select: none;
 }
 
-/* Стиль для контейнера фильтров диапазона */
 .filter-range {
   display: flex;
   flex-direction: row;
@@ -695,12 +676,12 @@ export default {
 }
 
 .filter-range input {
-  width: calc(50% - 0.25rem); /* Распределить ширину с учетом gap */
+  width: calc(50% - 0.25rem);
   padding: 0.3rem;
   font-size: 0.9rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  box-sizing: border-box; /* Учитываем padding и border в ширине */
+  box-sizing: border-box;
 }
 
 
@@ -711,14 +692,14 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* Ensure modal is on top */
+  z-index: 1000;
 }
 
 .modal {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 450px; /* Slightly wider for better form layout */
+  width: 450px;
   max-width: 90%;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
@@ -726,7 +707,7 @@ export default {
 .modal h2 {
   text-align: center;
   font-size: 1.5rem;
-  margin-bottom: 1.5rem; /* More space */
+  margin-bottom: 1.5rem;
 }
 
 .form-group {
@@ -741,13 +722,13 @@ export default {
 
 input,
 textarea,
-select { /* General styling for form inputs, not header inputs */
+select {
   width: 100%;
-  padding: 0.6rem; /* Slightly more padding */
+  padding: 0.6rem;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 1rem;
-  box-sizing: border-box; /* Important for width: 100% */
+  box-sizing: border-box;
   resize: none;
 }
 
@@ -755,7 +736,7 @@ select { /* General styling for form inputs, not header inputs */
 .actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 1.5rem; /* More space */
+  margin-top: 1.5rem;
 }
 
 .top-bar {
