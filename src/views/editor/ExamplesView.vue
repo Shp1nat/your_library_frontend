@@ -198,7 +198,7 @@ export default {
             conditions,
             main_cond: 'and',
             search: '',
-            sort: this.sortField,
+            sort_col: this.sortField,
             sort_dir: this.sortDir
           })
         });
@@ -413,7 +413,7 @@ export default {
             conditions: this.bookSearch ? [{ var: 'name', operator: 'contain', value: this.bookSearch }] : [],
             main_cond: 'and',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });
@@ -453,7 +453,7 @@ export default {
             conditions: this.publisherSearch ? [{ var: 'name', operator: 'contain', value: this.publisherSearch }] : [],
             main_cond: 'and',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });

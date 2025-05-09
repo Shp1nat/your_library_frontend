@@ -191,7 +191,7 @@ export default {
             conditions,
             main_cond: 'and',
             search: '',
-            sort: 'updatedAt',
+            sort_col: this.sortField,
             sort_dir: this.sortDir
           })
         });
@@ -434,7 +434,7 @@ export default {
             ] : [],
             main_cond: 'or',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });
@@ -475,7 +475,7 @@ export default {
             conditions: this.genreSearch ? [{ var: 'name', operator: 'contain', value: this.genreSearch }] : [],
             main_cond: 'and',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });
@@ -516,7 +516,7 @@ export default {
             conditions: this.typeSearch ? [{ var: 'name', operator: 'contain', value: this.typeSearch }] : [],
             main_cond: 'and',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });
