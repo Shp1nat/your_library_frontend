@@ -30,16 +30,17 @@
             <span style="margin-right: 0.3rem;">Год</span>
             <span v-if="sortField === 'year'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
-          <div class="year-filter">
-            <input type="number" v-model="searchFields.year_from" @input="loadExamples" placeholder="От" />
+          <div class="filter-range"> <input type="number" v-model="searchFields.year_from" @input="loadExamples" placeholder="От" />
             <input type="number" v-model="searchFields.year_to" @input="loadExamples" placeholder="До" />
           </div>
         </div>
-        <div class="cell">
-          <span class="sortable" @click="toggleAvailableCountSort" style="margin-right: 0.3rem;">
-            Доступно <span v-if="sortField === 'availableCount'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
-          </span>
-          <input type="number" v-model="searchFields.availableCount" @input="loadExamples" placeholder="Кол-во" class="header-filter-input" style="width: 80px;" />
+        <div class="cell available-column"> <div class="column-header sortable" @click="toggleAvailableCountSort">
+          <span style="margin-right: 0.3rem;">Доступно</span>
+          <span v-if="sortField === 'availableCount'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+        </div>
+          <div class="filter-range"> <input type="number" v-model="searchFields.availableCount_from" @input="loadExamples" placeholder="От" />
+            <input type="number" v-model="searchFields.availableCount_to" @input="loadExamples" placeholder="До" />
+          </div>
         </div>
         <div class="cell">
           Издательство
@@ -141,7 +142,9 @@ export default {
         exampleName: '',
         year_from: '',
         year_to: '',
-        availableCount: '',
+        // Изменено: удалено availableCount, добавлены from/to
+        availableCount_from: '',
+        availableCount_to: '',
         publisherName: ''
       },
       errorMessage: '',
@@ -172,19 +175,36 @@ export default {
       const conditions = [];
 
       if (this.searchFields.exampleName) {
-        conditions.push({ var: 'name', operator: 'contain', value: this.searchFields.exampleName });
+        conditions.push({var: 'name', operator: 'contain', value: this.searchFields.exampleName});
       }
-      if (this.searchFields.year_from) {
-        conditions.push({ var: 'year', operator: 'greater_or_equal', value: this.searchFields.year_from });
+      if (this.searchFields.year_from !== '' && this.searchFields.year_from !== null) {
+        conditions.push({var: 'year', operator: 'greater_or_equal', value: parseInt(this.searchFields.year_from, 10)}); // Преобразование в число
       }
-      if (this.searchFields.year_to) {
-        conditions.push({ var: 'year', operator: 'less_or_equal', value: this.searchFields.year_to });
+      if (this.searchFields.year_to !== '' && this.searchFields.year_to !== null) {
+        conditions.push({var: 'year', operator: 'less_or_equal', value: parseInt(this.searchFields.year_to, 10)}); // Преобразование в число
       }
-      if (this.searchFields.availableCount !== '' && this.searchFields.availableCount !== null) { // Ensure empty string doesn't filter as 0
-        conditions.push({ var: 'availableCount', operator: 'equal', value: this.searchFields.availableCount });
+      // Добавлено: фильтрация по диапазону availableCount
+      if (this.searchFields.availableCount_from !== '' && this.searchFields.availableCount_from !== null) {
+        conditions.push({
+          var: 'availableCount',
+          operator: 'greater_or_equal',
+          value: parseInt(this.searchFields.availableCount_from, 10)
+        }); // Преобразование в число
       }
+      if (this.searchFields.availableCount_to !== '' && this.searchFields.availableCount_to !== null) {
+        conditions.push({
+          var: 'availableCount',
+          operator: 'less_or_equal',
+          value: parseInt(this.searchFields.availableCount_to, 10)
+        }); // Преобразование в число
+      }
+      // Удалена одиночная фильтрация по availableCount
+      // if (this.searchFields.availableCount !== '' && this.searchFields.availableCount !== null) {
+      //   conditions.push({ var: 'availableCount', operator: 'equal', value: this.searchFields.availableCount });
+      // }
+
       if (this.searchFields.publisherName) {
-        conditions.push({ var: 'publisherName', operator: 'contain', value: this.searchFields.publisherName });
+        conditions.push({var: 'publisherName', operator: 'contain', value: this.searchFields.publisherName});
       }
 
       try {
@@ -241,6 +261,7 @@ export default {
       }
       this.loadExamples();
     },
+    // Существующая функция сортировки для availableCount
     toggleAvailableCountSort() {
       if (this.sortField === 'availableCount') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -269,7 +290,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ example: { id } })
+          body: JSON.stringify({example: {id}})
         });
 
         const data = await res.json();
@@ -325,7 +346,7 @@ export default {
     async saveExample() {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
-      const exampleToSend = { ...this.selectedExample };
+      const exampleToSend = {...this.selectedExample};
 
       try {
         const response = await fetch('http://localhost:3000/proxy/set-example.json', {
@@ -334,7 +355,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ example: exampleToSend })
+          body: JSON.stringify({example: exampleToSend})
         });
 
         const responseJson = await response.json();
@@ -359,7 +380,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ example: { id: this.selectedExample.id } })
+          body: JSON.stringify({example: {id: this.selectedExample.id}})
         });
 
         const responseJson = await response.json();
@@ -385,7 +406,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ example: { id: this.selectedIds } })
+          body: JSON.stringify({example: {id: this.selectedIds}})
         });
 
         const responseJson = await response.json();
@@ -410,7 +431,7 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            conditions: this.bookSearch ? [{ var: 'name', operator: 'contain', value: this.bookSearch }] : [],
+            conditions: this.bookSearch ? [{var: 'name', operator: 'contain', value: this.bookSearch}] : [],
             main_cond: 'and',
             search: '',
             sort_col: 'name',
@@ -450,7 +471,7 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            conditions: this.publisherSearch ? [{ var: 'name', operator: 'contain', value: this.publisherSearch }] : [],
+            conditions: this.publisherSearch ? [{var: 'name', operator: 'contain', value: this.publisherSearch}] : [],
             main_cond: 'and',
             search: '',
             sort_col: 'name',
@@ -596,7 +617,8 @@ export default {
 .table-row {
   display: grid;
   /* Checkbox, Book Name, Year, Available, Publisher, UpdatedAt */
-  grid-template-columns: 40px 2fr 1.5fr 1.2fr 1.5fr 1.5fr;
+  /* Ширина колонок скорректирована для фильтров "от" и "до" */
+  grid-template-columns: 40px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
 }
@@ -611,6 +633,7 @@ export default {
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
 }
+
 .table-row .cell {
   padding: 0.75rem 0.5rem; /* Increased padding for rows */
 }
@@ -626,22 +649,26 @@ export default {
   text-overflow: ellipsis;
   /* white-space: nowrap; Removed to allow wrapping in header if needed */
 }
+
 .table-row .cell { /* Ensure row cells are nowrap if desired, header can wrap */
   white-space: nowrap;
 }
 
 
 .header-filter-input {
-  margin-left: 5px;
+  margin-top: 5px; /* Отступ сверху */
   padding: 0.3rem 0.5rem;
   font-size: 0.9rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  /* width: auto; Let grid cell define width, or set max-width */
+  width: 100%; /* Занимает всю доступную ширину */
+  box-sizing: border-box; /* Учитываем padding и border в ширине */
 }
 
 
-.year-column {
+/* Общий стиль для колонок с фильтрацией по диапазону */
+.year-column,
+.available-column {
   display: flex;
   flex-direction: column;
 }
@@ -653,25 +680,27 @@ export default {
   align-items: center;
   margin-bottom: 0.25rem; /* Space if filters are below */
 }
+
 .cell > .sortable, .column-header.sortable { /* Ensure sortable text parts are clickable */
   cursor: pointer;
   user-select: none;
 }
 
-
-.year-filter {
+/* Стиль для контейнера фильтров диапазона */
+.filter-range {
   display: flex;
   flex-direction: row;
   gap: 0.5rem;
   margin-top: 0.25rem;
 }
 
-.year-filter input {
-  width: calc(50% - 0.25rem); /* Distribute width in gap */
+.filter-range input {
+  width: calc(50% - 0.25rem); /* Распределить ширину с учетом gap */
   padding: 0.3rem;
   font-size: 0.9rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box; /* Учитываем padding и border в ширине */
 }
 
 
@@ -721,7 +750,6 @@ select { /* General styling for form inputs, not header inputs */
   box-sizing: border-box; /* Important for width: 100% */
   resize: none;
 }
-
 
 
 .actions {
