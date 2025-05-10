@@ -759,6 +759,10 @@ select {
   background-color: #fff;
 }
 
+.cell.sortable {
+  cursor: pointer;
+}
+
 .single-select .select-item {
   padding: 8px 12px;
   cursor: pointer;
