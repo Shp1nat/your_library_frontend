@@ -14,7 +14,9 @@
 
     <div class="table-container">
       <div class="table-header">
-        <div class="cell checkbox-cell"></div>
+        <div class="cell checkbox-cell">
+          <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
+        </div>
         <div class="cell">Название <input v-model="searchName" @input="loadTypes" /></div>
         <div class="cell sortable" @click="toggleSort">Последнее изменение {{ sortDir === 'asc' ? '↑' : '↓' }}</div>
       </div>
@@ -67,6 +69,11 @@ export default {
       selectedIds: [],
       searchName: '',
       errorMessage: ''
+    }
+  },
+  computed: {
+    allSelected() {
+      return this.types.length > 0 && this.selectedIds.length === this.types.length;
     }
   },
   async mounted() {
@@ -238,6 +245,13 @@ export default {
       } catch (err) {
         console.error('Ошибка при удалении выбранных типов:', err);
         this.errorMessage = 'Ошибка подключения к серверу';
+      }
+    },
+    toggleSelectAll(event) {
+      if (event.target.checked) {
+        this.selectedIds = this.types.map(type => type.id);
+      } else {
+        this.selectedIds = [];
       }
     },
     goBack() {

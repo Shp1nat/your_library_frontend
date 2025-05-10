@@ -14,7 +14,9 @@
 
     <div class="table-container">
       <div class="table-header">
-        <div class="cell checkbox-cell"></div>
+        <div class="cell checkbox-cell">
+          <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
+        </div>
         <div class="cell">Название <input v-model="searchName" @input="loadGenres" /></div>
         <div class="cell sortable" @click="toggleSort">Последнее изменение {{ sortDir === 'asc' ? '↑' : '↓' }}</div>
       </div>
@@ -67,6 +69,11 @@ export default {
       selectedIds: [],
       searchName: '',
       errorMessage: ''
+    }
+  },
+  computed: {
+    allSelected() {
+      return this.genres.length > 0 && this.selectedIds.length === this.genres.length;
     }
   },
   async mounted() {
@@ -238,6 +245,13 @@ export default {
       } catch (err) {
         console.error('Ошибка при удалении выбранных жанров:', err);
         this.errorMessage = 'Ошибка подключения к серверу';
+      }
+    },
+    toggleSelectAll(event) {
+      if (event.target.checked) {
+        this.selectedIds = this.genres.map(genre => genre.id);
+      } else {
+        this.selectedIds = [];
       }
     },
     goBack() {

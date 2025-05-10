@@ -14,7 +14,9 @@
 
     <div class="table-container">
       <div class="table-header">
-        <div class="cell checkbox-cell"></div>
+        <div class="cell checkbox-cell">
+          <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
+        </div>
         <div class="cell">Название <input v-model="searchFields.name" @input="loadBooks" /></div>
         <div class="cell year-column">
           <div class="column-header sortable" @click="toggleYearSort">
@@ -147,6 +149,11 @@ export default {
       typeSearch: ''
     }
   },
+  computed: {
+    allSelected() {
+      return this.books.length > 0 && this.selectedIds.length === this.books.length;
+    }
+  },
   async mounted() {
     await this.loadBooks();
   },
@@ -184,7 +191,7 @@ export default {
             conditions,
             main_cond: 'and',
             search: '',
-            sort: 'updatedAt',
+            sort_col: this.sortField,
             sort_dir: this.sortDir
           })
         });
@@ -427,7 +434,7 @@ export default {
             ] : [],
             main_cond: 'or',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });
@@ -468,7 +475,7 @@ export default {
             conditions: this.genreSearch ? [{ var: 'name', operator: 'contain', value: this.genreSearch }] : [],
             main_cond: 'and',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });
@@ -509,7 +516,7 @@ export default {
             conditions: this.typeSearch ? [{ var: 'name', operator: 'contain', value: this.typeSearch }] : [],
             main_cond: 'and',
             search: '',
-            sort: 'name',
+            sort_col: 'name',
             sort_dir: 'asc'
           })
         });
@@ -550,6 +557,13 @@ export default {
       const idx = this.selectedBook.types.findIndex(t => t.id === type.id);
       if (idx >= 0) this.selectedBook.types.splice(idx, 1);
       else this.selectedBook.types.push({ id: type.id });
+    },
+    toggleSelectAll(event) {
+      if (event.target.checked) {
+        this.selectedIds = this.books.map(book => book.id);
+      } else {
+        this.selectedIds = [];
+      }
     },
     goBack() {
       this.$router.push('/editor');

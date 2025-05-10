@@ -6,8 +6,8 @@
       <EditorCard label="Жанры" icon="🎭" />
       <EditorCard label="Типы" icon="📚" />
       <EditorCard label="Книги" icon="📖" />
-      <EditorCard label="Экземпляры" icon="🔖" />
       <EditorCard label="Издательства" icon="🏢" />
+      <EditorCard label="Экземпляры" icon="🔖" />
     </div>
   </div>
 </template>
