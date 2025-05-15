@@ -4,7 +4,7 @@
 
 <script>
 import userOrders from '@/views/userDashboard/OrdersView.vue'
-import adminOrders from '@/views/adminDashboard/OrdersView.vue'
+import adminOrders from '@/views/adminDashboard/OrderView.vue'
 
 export default {
   computed: {
