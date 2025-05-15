@@ -22,7 +22,11 @@
     <div class="table-container">
       <div class="table-header">
         <div class="cell checkbox-cell">
-          <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
+          <input type="checkbox"
+                 :checked="allSelected"
+                 @change="toggleSelectAll"
+                 :disabled="availableExamples.length === 0"
+          />
         </div>
         <div class="cell">
           Название книги
@@ -62,9 +66,14 @@
           v-for="example in examples"
           :key="example.id"
           class="table-row"
+          :class="{'row-disabled': example.availableCount === 0}"
           @click="viewExampleDetails(example.id)" >
         <div class="cell checkbox-cell" @click.stop>
-          <input type="checkbox" :value="example.id" v-model="selectedIds" />
+          <input type="checkbox"
+                 :value="example.id"
+                 v-model="selectedIds"
+                 :disabled="example.availableCount === 0"
+          />
         </div>
         <div class="cell">{{ example.book?.name }}</div>
         <div class="cell">{{ example.year }}</div>
@@ -133,9 +142,16 @@ export default {
     };
   },
   computed: {
+    // Получаем только доступные экземпляры
+    availableExamples() {
+      return this.examples.filter(example => example.availableCount > 0);
+    },
     allSelected() {
-      // Проверяем, есть ли экземпляры, и совпадает ли количество выбранных с общим количеством
-      return this.examples.length > 0 && this.selectedIds.length === this.examples.length;
+      // Проверяем, выбраны ли все *доступные* экземпляры
+      // И также убеждаемся, что выбранных ID больше 0, чтобы избежать ложного "все выбраны" при пустом списке
+      return this.availableExamples.length > 0 &&
+          this.selectedIds.length === this.availableExamples.length &&
+          this.selectedIds.every(id => this.availableExamples.some(ex => ex.id === id));
     }
   },
   async mounted() {
@@ -234,7 +250,7 @@ export default {
         // Проверяем, есть ли ID для получения детальных данных
         if (!idResponseJson.result?.rows?.length) {
           this.examples = [];
-          // Сброс выбранных ID, если данные обновились и выбранных элементов больше нет
+          // Сброс выбранных ID, оставляем только те, которых нет в новом пустом списке (т.е. ничего)
           this.selectedIds = this.selectedIds.filter(id => this.examples.some(ex => ex.id === id));
           return; // Если ID нет, завершаем
         }
@@ -256,13 +272,18 @@ export default {
           this.examples = [];
         } else {
           this.examples = examplesData.result.rows || [];
-          // Сброс выбранных ID, если данные обновились и выбранных элементов больше нет
+          // Сброс выбранных ID, оставляем только те, которые есть в новом списке
           this.selectedIds = this.selectedIds.filter(id => this.examples.some(ex => ex.id === id));
         }
       } catch (err) {
         console.error('Ошибка при загрузке экземпляров:', err);
         this.errorMessage = 'Ошибка подключения к серверу или получения данных';
         this.examples = [];
+      } finally {
+        // После загрузки данных, убедимся, что выбранные ID соответствуют доступным
+        this.selectedIds = this.selectedIds.filter(id =>
+            this.examples.some(ex => ex.id === id && ex.availableCount > 0)
+        );
       }
     },
     // Методы сортировки, остаются без изменений
@@ -335,10 +356,11 @@ export default {
     closeModal() {
       this.selectedExample = null;
     },
-    // Метод для выбора/снятия выбора всех чекбоксов
+    // Метод для выбора/снятия выбора всех чекбоксов (только для доступных)
     toggleSelectAll(event) {
       if (event.target.checked) {
-        this.selectedIds = this.examples.map(example => example.id);
+        // Выбираем ID только тех экземпляров, у которых availableCount > 0
+        this.selectedIds = this.availableExamples.map(example => example.id);
       } else {
         this.selectedIds = [];
       }
@@ -389,13 +411,7 @@ export default {
       } finally {
         this.isOrdering = false; // Снимаем флаг независимо от результата
       }
-    },
-    // Метод для возврата на предыдущую страницу (предполагается, что это главная или другая страница)
-    // goBack() { // Метод goBack удален
-    //   // Используем $router.go(-1) для возврата на предыдущую страницу
-    //   // или this.$router.push('/') если нужно перейти на конкретный маршрут
-    //   this.$router.go(-1);
-    // }
+    }
   }
 };
 </script>
@@ -427,19 +443,14 @@ export default {
 
 .header-row {
   display: flex;
-  /* Изменено с justify-content: flex-start; чтобы центрировать заголовок */
   justify-content: center;
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
-  position: relative; /* Оставлено position: relative; на случай, если заголовок должен быть абсолютно позиционирован относительно этого контейнера */
+  position: relative;
 }
 
 .title {
-  /* Убрано абсолютное позиционирование и трансформация, т.к. флексбокс уже центрирует */
-  /* position: absolute; */
-  /* left: 50%; */
-  /* transform: translateX(-50%); */
   font-size: 2rem;
   font-weight: bold;
   color: #1f2937; /* Темно-серый текст */
@@ -481,19 +492,6 @@ export default {
   transform: none !important; /* Отключаем анимацию при отключенной кнопке */
 }
 
-/* Стили для кнопки "Назад" удалены */
-/* .btn.back-button {
-  font-weight: 500;
-  color: #374151;
-  background-color: transparent;
-  border: 1px solid #d1d5db;
-}
-
-.btn.back-button:hover:not(:disabled) {
-  color: #111827;
-  background-color: #e5e7eb;
-  transform: translateX(-2px); /* Анимация сдвига назад */
-/* } */
 
 .table-container {
   border: 1px solid #d1d5db; /* Серый бордер */
@@ -528,7 +526,14 @@ export default {
   border-bottom: none; /* Нет бордера у последней строки */
 }
 
-.table-row:hover {
+/* Стиль для строки, если availableCount === 0 */
+.table-row.row-disabled {
+  opacity: 0.6; /* Затемнение строки */
+  background-color: #fef2f2; /* Светло-красный фон */
+  cursor: not-allowed; /* Курсор "запрещено" */
+}
+
+.table-row:hover:not(.row-disabled) {
   background-color: #f0f4f8; /* Более заметный фон при наведении */
 }
 
