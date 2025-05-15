@@ -1,7 +1,6 @@
 <template>
   <div class="order-container">
     <div class="header-row">
-      <button class="btn back-button" @click="goBack">⬅ Назад</button>
       <h1 class="title">Оформление заказа</h1>
     </div>
 
@@ -392,11 +391,11 @@ export default {
       }
     },
     // Метод для возврата на предыдущую страницу (предполагается, что это главная или другая страница)
-    goBack() {
-      // Используем $router.go(-1) для возврата на предыдущую страницу
-      // или this.$router.push('/') если нужно перейти на конкретный маршрут
-      this.$router.go(-1);
-    }
+    // goBack() { // Метод goBack удален
+    //   // Используем $router.go(-1) для возврата на предыдущую страницу
+    //   // или this.$router.push('/') если нужно перейти на конкретный маршрут
+    //   this.$router.go(-1);
+    // }
   }
 };
 </script>
@@ -428,17 +427,19 @@ export default {
 
 .header-row {
   display: flex;
-  justify-content: flex-start;
+  /* Изменено с justify-content: flex-start; чтобы центрировать заголовок */
+  justify-content: center;
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
-  position: relative;
+  position: relative; /* Оставлено position: relative; на случай, если заголовок должен быть абсолютно позиционирован относительно этого контейнера */
 }
 
 .title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  /* Убрано абсолютное позиционирование и трансформация, т.к. флексбокс уже центрирует */
+  /* position: absolute; */
+  /* left: 50%; */
+  /* transform: translateX(-50%); */
   font-size: 2rem;
   font-weight: bold;
   color: #1f2937; /* Темно-серый текст */
@@ -480,7 +481,8 @@ export default {
   transform: none !important; /* Отключаем анимацию при отключенной кнопке */
 }
 
-.btn.back-button {
+/* Стили для кнопки "Назад" удалены */
+/* .btn.back-button {
   font-weight: 500;
   color: #374151;
   background-color: transparent;
@@ -491,7 +493,7 @@ export default {
   color: #111827;
   background-color: #e5e7eb;
   transform: translateX(-2px); /* Анимация сдвига назад */
-}
+/* } */
 
 .table-container {
   border: 1px solid #d1d5db; /* Серый бордер */
