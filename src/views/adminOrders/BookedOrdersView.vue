@@ -74,7 +74,7 @@
           <h3>Книги в заказе</h3>
           <ul>
             <li v-for="example in selectedOrder.examples" :key="example.id">
-              {{ example.book?.name || 'Неизвестная книга' }} (ID экземпляра: {{ example.id }})
+              {{ example?.name || 'Неизвестная книга' }} (ID экземпляра: {{ example.id }})
             </li>
           </ul>
         </div>
@@ -131,7 +131,7 @@ export default {
     getExampleNames(examples) {
       if (!examples || examples.length === 0) return 'Нет книг';
       // Объединяем названия книг через запятую
-      return examples.map(ex => ex.book?.name || 'Неизвестная книга').join(', ');
+      return examples.map(ex => ex?.name || 'Неизвестная книга').join(', ');
     },
     // Метод для загрузки забронированных заказов с сервера
     async loadBookedOrders() {
