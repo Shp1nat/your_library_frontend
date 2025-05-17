@@ -25,10 +25,19 @@
         <div class="cell checkbox-cell">
           <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
         </div>
-        <div class="cell">ID Заказа</div>
-        <div class="cell">Пользователь</div>
+        <div class="cell sortable" @click="toggleSort('id')">
+          ID Заказа
+          <span v-if="sortField === 'id'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+        </div>
+        <div class="cell user-column">
+          <div class="column-header">Пользователь (Логин)</div>
+          <input v-model="userSearch" @input="loadBookedOrders" placeholder="Поиск по логину..." class="header-filter-input"/>
+        </div>
         <div class="cell">Книги</div>
-        <div class="cell">Дата завершения</div>
+        <div class="cell sortable" @click="toggleSort('finishDate')">
+          Дата завершения
+          <span v-if="sortField === 'finishDate'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+        </div>
       </div>
 
       <div
@@ -41,7 +50,7 @@
           <input type="checkbox" :value="order.id" v-model="selectedIds" />
         </div>
         <div class="cell">{{ order.id }}</div>
-        <div class="cell">{{ order.user ? `${order.user.name} ${order.user.lastname}` : 'Неизвестный пользователь' }}</div>
+        <div class="cell">{{ order.user?.login || 'Неизвестный пользователь' }}</div>
         <div class="cell">{{ getExampleNames(order.examples) }}</div>
         <div class="cell">{{ formatDate(order.finishDate) }}</div>
       </div>
@@ -91,6 +100,9 @@ export default {
       selectedIds: [], // Массив ID выбранных заказов
       selectedOrder: null, // Объект для хранения данных выбранного заказа для модального окна
       errorMessage: '', // Сообщение об ошибке
+      sortField: 'finishDate', // Поле для сортировки по умолчанию
+      sortDir: 'asc', // Направление сортировки по умолчанию
+      userSearch: '', // Поле для поиска по логину пользователя
     };
   },
   computed: {
@@ -126,6 +138,14 @@ export default {
       this.errorMessage = ''; // Сбрасываем сообщение об ошибке
       const token = localStorage.getItem('token'); // Получаем токен из локального хранилища
 
+      const conditions = [{ var: 'status', operator: 'equal', value: 'booked' }]; // Фильтр по статусу 'booked'
+
+      // Добавляем условие для поиска по логину пользователя, если поле поиска не пустое
+      if (this.userSearch) {
+        // Предполагаем, что API поддерживает фильтрацию по полю login внутри объекта user
+        conditions.push({ var: 'user.login', operator: 'contain', value: this.userSearch });
+      }
+
       try {
         // Шаг 1: Получаем ID забронированных заказов
         const response = await fetch('http://localhost:3000/proxy/get-order-ids.json', {
@@ -135,11 +155,11 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            conditions: [{ var: 'status', operator: 'equal', value: 'booked' }], // Фильтр по статусу 'booked'
-            main_cond: 'and',
+            conditions, // Передаем условия фильтрации и поиска
+            main_cond: 'and', // Указываем логическое И для условий
             search: '', // Поиск не используется в этом случае
-            sort_col: 'finishDate', // Сортируем по дате завершения
-            sort_dir: 'asc' // По возрастанию
+            sort_col: this.sortField, // Поле для сортировки
+            sort_dir: this.sortDir // Направление сортировки
           })
         });
 
@@ -176,6 +196,16 @@ export default {
         this.orders = []; // Очищаем список заказов при ошибке
       }
     },
+    // Метод для переключения сортировки
+    toggleSort(field) {
+      if (this.sortField === field) {
+        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortField = field;
+        this.sortDir = 'asc'; // Сортировка по умолчанию по возрастанию при смене поля
+      }
+      this.loadBookedOrders(); // Перезагружаем данные с новой сортировкой
+    },
     // Метод для открытия модального окна с деталями заказа
     openOrderModal(order) {
       this.selectedOrder = order; // Устанавливаем выбранный заказ
@@ -200,7 +230,7 @@ export default {
       const token = localStorage.getItem('token'); // Получаем токен
 
       try {
-        const response = await fetch('http://localhost:3000/proxy/approve-order-rent.js', {
+        const response = await fetch('http://localhost:3000/proxy/approve-order-rent.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -348,8 +378,8 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  /* Адаптируем колонки под данные заказа */
-  grid-template-columns: 40px 1fr 2fr 3fr 1.5fr; /* Чекбокс, ID, Пользователь, Книги, Дата */
+  /* Адаптируем колонки под данные заказа: Чекбокс, ID, Пользователь (Логин), Книги, Дата */
+  grid-template-columns: 40px 1fr 2fr 3fr 1.5fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
 }
@@ -382,6 +412,36 @@ export default {
 .table-row .cell {
   white-space: nowrap;
 }
+
+/* Стили для колонки пользователя с полем поиска */
+.user-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.column-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.cell > .sortable, .column-header.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.header-filter-input {
+  margin-top: 5px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 
 .modal-overlay {
   position: fixed;
@@ -446,6 +506,10 @@ export default {
   margin-top: 1.5rem;
 }
 
+.sortable {
+  cursor: pointer;
+}
+
 .top-bar {
   display: flex;
   justify-content: flex-end;
@@ -459,7 +523,7 @@ export default {
 
 /* Дополнительные стили для лучшего отображения текста в ячейках, если он длинный */
 .table-row .cell:nth-child(3), /* Пользователь */
-.table-row .cell:nth-child(4)  /* Книги */
+.table-row .cell:nth-child(4) /* Книги */
 {
   white-space: normal; /* Разрешаем перенос текста */
   word-break: break-word; /* Разбиваем длинные слова */
