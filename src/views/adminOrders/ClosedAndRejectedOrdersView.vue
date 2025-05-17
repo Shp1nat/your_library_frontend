@@ -2,7 +2,8 @@
   <div class="orders-container">
     <div class="header-row">
       <button class="btn back-button" @click="goBack">⬅ Назад</button>
-      <h1 class="title">Завершенные заказы</h1> </div>
+      <h1 class="title">Завершенные заказы</h1>
+    </div>
 
     <div class="top-bar">
     </div>
@@ -15,11 +16,19 @@
         </div>
         <div class="cell user-column">
           <div class="column-header">Пользователь (Логин)</div>
-          <input v-model="userSearch" @input="loadCompletedOrders" placeholder="Поиск по логину..." class="header-filter-input"/> </div>
-        <div class="cell book-column"> <div class="column-header">Книги</div> <input v-model="bookSearch" @input="loadCompletedOrders" placeholder="Поиск по названию..." class="header-filter-input"/> </div>
+          <input v-model="userSearch" @input="loadCompletedOrders" placeholder="Поиск по логину..." class="header-filter-input"/>
+        </div>
+        <div class="cell book-column">
+          <div class="column-header">Книги</div>
+          <input v-model="bookSearch" @input="loadCompletedOrders" placeholder="Поиск по названию..." class="header-filter-input"/>
+        </div>
         <div class="cell sortable" @click="toggleSort('finishDate')">
           Дата завершения
           <span v-if="sortField === 'finishDate'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+        </div>
+        <div class="cell sortable" @click="toggleSort('status')">
+          Статус
+          <span v-if="sortField === 'status'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
         </div>
       </div>
 
@@ -33,6 +42,7 @@
         <div class="cell">{{ order.user?.login || 'Неизвестный пользователь' }}</div>
         <div class="cell">{{ getExampleNames(order.examples) }}</div>
         <div class="cell">{{ formatDate(order.finishDate) }}</div>
+        <div class="cell">{{ order.status === 'closed' ? 'Завершено' : 'Отклонено' }}</div>
       </div>
     </div>
 
@@ -62,6 +72,7 @@
         <div class="order-details-section">
           <h3>Прочие детали</h3>
           <p><strong>Дата завершения:</strong> {{ formatDate(selectedOrder.finishDate) }}</p>
+          <p><strong>Статус:</strong> {{ selectedOrder.status === 'closed' ? 'Завершено' : 'Отклонено' }}</p>
         </div>
 
         <div class="actions">
@@ -86,7 +97,6 @@ export default {
     };
   },
   computed: {
-    // allSelected вычисляемое свойство удалено
   },
   async mounted() {
     await this.loadCompletedOrders();
@@ -191,9 +201,6 @@ export default {
       this.selectedOrder = null;
       this.errorMessage = '';
     },
-    // toggleSelectAll метод удален
-    // extendSelectedOrders метод удален
-    // confirmReturnSelectedOrders метод удален
     goBack() {
       this.$router.push('/orders');
     }
@@ -251,10 +258,6 @@ export default {
   transform: scale(1.05);
 }
 
-/* Стили для кнопок действий удалены, остался только back-button */
-/* .btn.approve-selected:hover, .btn.reject-selected:hover удалены */
-
-
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -281,9 +284,8 @@ export default {
 
 .table-header,
 .table-row {
-  /* Удалена первая колонка для чекбоксов */
   display: grid;
-  grid-template-columns: 1fr 2fr 3fr 1.5fr;
+  grid-template-columns: 1fr 2fr 3fr 1.5fr 1fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
 }
@@ -415,17 +417,13 @@ export default {
 }
 
 .top-bar {
-  /*top-bar остался, но пустой, можно его удалить или оставить*/
   display: flex;
   justify-content: flex-end;
   margin-bottom: 1rem;
 }
-/* button-group-right удален */
 
-
-/* Индексы ячеек в grid поменялись из-за удаления первой колонки */
-.table-row .cell:nth-child(2), /* Был 3-й (Пользователь), стал 2-й */
-.table-row .cell:nth-child(3) { /* Был 4-й (Книги), стал 3-й */
+.table-row .cell:nth-child(2),
+.table-row .cell:nth-child(3) {
   white-space: normal;
   word-break: break-word;
 }

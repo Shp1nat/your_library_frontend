@@ -247,7 +247,7 @@ export default {
       const token = localStorage.getItem('token');
 
       try {
-        const response = await fetch('http://localhost:3000/proxy/reject-order-rent.js', {
+        const response = await fetch('http://localhost:3000/proxy/reject-order-rent.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
