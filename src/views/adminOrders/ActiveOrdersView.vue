@@ -27,7 +27,7 @@
         <div class="cell user-column">
           <div class="column-header">Пользователь (Логин)</div>
           <input v-model="userSearch" @input="loadActiveOrders" placeholder="Поиск по логину..." class="header-filter-input"/> </div>
-        <div class="cell">Книги</div>
+        <div class="cell book-column"> <div class="column-header">Книги</div> <input v-model="bookSearch" @input="loadActiveOrders" placeholder="Поиск по названию..." class="header-filter-input"/> </div>
         <div class="cell sortable" @click="toggleSort('finishDate')">
           Дата завершения
           <span v-if="sortField === 'finishDate'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
@@ -97,6 +97,7 @@ export default {
       sortField: 'finishDate',
       sortDir: 'asc',
       userSearch: '',
+      bookSearch: '', // Добавлено свойство для поиска по книге
     };
   },
   computed: {
@@ -105,7 +106,7 @@ export default {
     }
   },
   async mounted() {
-    await this.loadActiveOrders(); // Вызываем метод загрузки активных заказов
+    await this.loadActiveOrders();
   },
   methods: {
     formatDate(dateStr) {
@@ -121,15 +122,18 @@ export default {
       if (!examples || examples.length === 0) return 'Нет книг';
       return examples.map(ex => ex?.name || 'Неизвестная книга').join(', ');
     },
-    async loadActiveOrders() { // Метод переименован и изменен
+    async loadActiveOrders() { // Метод остался тот же
       this.errorMessage = '';
       const token = localStorage.getItem('token');
 
-      // Условие для загрузки заказов со статусом 'active'
       const conditions = [{ var: 'status', operator: 'equal', value: 'active' }];
 
       if (this.userSearch) {
         conditions.push({ var: 'userLogin', operator: 'contain', value: this.userSearch });
+      }
+
+      if (this.bookSearch) {
+        conditions.push({ var: 'exampleName', operator: 'contain', value: this.bookSearch });
       }
 
       try {
@@ -141,8 +145,8 @@ export default {
           },
           body: JSON.stringify({
             conditions,
-            main_cond: 'and',
-            search: '',
+            main_cond: 'and', // Используем AND, чтобы оба фильтра применялись одновременно
+            search: '', // Поле search оставлено пустым
             sort_col: this.sortField,
             sort_dir: this.sortDir
           })
@@ -203,14 +207,13 @@ export default {
         this.selectedIds = [];
       }
     },
-    // Новый метод для продления аренды
+    // Метод для продления аренды - остался прежним
     async extendSelectedOrders() {
       if (!this.selectedIds.length) return;
       this.errorMessage = '';
       const token = localStorage.getItem('token');
 
       try {
-        // Используем ту же ручку, что и для подтверждения, но для активных она означает продление
         const response = await fetch('http://localhost:3000/proxy/approve-order-rent.json', {
           method: 'POST',
           headers: {
@@ -225,8 +228,7 @@ export default {
         if (responseJson.error) {
           this.errorMessage = responseJson.error;
         } else {
-          this.selectedIds = []; // Сбросить выбор после успешной операции
-          // Перезагрузить список активных заказов
+          this.selectedIds = [];
           await this.loadActiveOrders();
         }
       } catch (err) {
@@ -234,14 +236,13 @@ export default {
         this.errorMessage = 'Ошибка подключения к серверу при продлении аренды заказов';
       }
     },
-    // Новый метод для подтверждения возврата
+    // Метод для подтверждения возврата - остался прежним
     async confirmReturnSelectedOrders() {
       if (!this.selectedIds.length) return;
       this.errorMessage = '';
       const token = localStorage.getItem('token');
 
       try {
-        // Используем новую ручку для подтверждения возврата
         const response = await fetch('http://localhost:3000/proxy/close-order.json', {
           method: 'POST',
           headers: {
@@ -256,8 +257,7 @@ export default {
         if (responseJson.error) {
           this.errorMessage = responseJson.error;
         } else {
-          this.selectedIds = []; // Сбросить выбор после успешной операции
-          // Перезагрузить список активных заказов (закрытые заказы исчезнут)
+          this.selectedIds = [];
           await this.loadActiveOrders();
         }
       } catch (err) {
@@ -273,7 +273,7 @@ export default {
 </script>
 
 <style scoped>
-/* Стили можно оставить как есть, они довольно общие для таблиц */
+/* Стили скопированы из предыдущей версии, добавлены стили для .book-column */
 .orders-container {
   padding: 2rem;
 }
@@ -323,7 +323,7 @@ export default {
   transform: scale(1.05);
 }
 
-/* Можете изменить цвета кнопок, если хотите */
+/* Цвета кнопок для активных заказов - можно оставить эти или изменить */
 .btn.approve-selected:hover { /* Это теперь кнопка "Продлить аренду" */
   background-color: #34d399; /* Пример: зеленоватый цвет */
   color: white;
@@ -361,7 +361,7 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  grid-template-columns: 40px 1fr 2fr 3fr 1.5fr;
+  grid-template-columns: 40px 1fr 2fr 3fr 1.5fr; /* Ширина колонок осталась прежней, 3fr для книг */
   align-items: center;
   border-bottom: 1px solid #d1d5db;
 }
@@ -395,7 +395,9 @@ export default {
   white-space: nowrap;
 }
 
-.user-column {
+/* Добавлены стили для колонки Книги, аналогичные user-column */
+.user-column,
+.book-column {
   display: flex;
   flex-direction: column;
 }
@@ -502,8 +504,10 @@ export default {
   gap: 1rem;
 }
 
-.table-row .cell:nth-child(3),
-.table-row .cell:nth-child(4) {
+/* Эти стили могут нуждаться в корректировке после добавления инпута в заголовок */
+/* Ячейки с нормальным переносом строк, чтобы вместить больше текста */
+.table-row .cell:nth-child(3), /* Пользователь */
+.table-row .cell:nth-child(4) { /* Книги */
   white-space: normal;
   word-break: break-word;
 }

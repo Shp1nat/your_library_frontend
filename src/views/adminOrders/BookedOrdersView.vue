@@ -33,7 +33,7 @@
           <div class="column-header">Пользователь (Логин)</div>
           <input v-model="userSearch" @input="loadBookedOrders" placeholder="Поиск по логину..." class="header-filter-input"/>
         </div>
-        <div class="cell">Книги</div>
+        <div class="cell book-column"> <div class="column-header">Книги</div> <input v-model="bookSearch" @input="loadBookedOrders" placeholder="Поиск по названию..." class="header-filter-input"/> </div>
         <div class="cell sortable" @click="toggleSort('finishDate')">
           Дата завершения
           <span v-if="sortField === 'finishDate'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
@@ -103,6 +103,7 @@ export default {
       sortField: 'finishDate',
       sortDir: 'asc',
       userSearch: '',
+      bookSearch: '',
     };
   },
   computed: {
@@ -135,6 +136,10 @@ export default {
 
       if (this.userSearch) {
         conditions.push({ var: 'userLogin', operator: 'contain', value: this.userSearch });
+      }
+
+      if (this.bookSearch) {
+        conditions.push({ var: 'exampleName', operator: 'contain', value: this.bookSearch });
       }
 
       try {
@@ -358,7 +363,7 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  grid-template-columns: 40px 1fr 2fr 3fr 1.5fr;
+  grid-template-columns: 40px 1fr 2fr 3fr 1.5fr; /* Ширина колонок осталась прежней, 3fr для книг */
   align-items: center;
   border-bottom: 1px solid #d1d5db;
 }
@@ -392,7 +397,8 @@ export default {
   white-space: nowrap;
 }
 
-.user-column {
+.user-column,
+.book-column {
   display: flex;
   flex-direction: column;
 }
@@ -499,8 +505,8 @@ export default {
   gap: 1rem;
 }
 
-.table-row .cell:nth-child(3),
-.table-row .cell:nth-child(4) {
+.table-row .cell:nth-child(3), /* Пользователь */
+.table-row .cell:nth-child(4) { /* Книги */
   white-space: normal;
   word-break: break-word;
 }
