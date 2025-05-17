@@ -96,58 +96,48 @@
 export default {
   data() {
     return {
-      orders: [], // Массив для хранения забронированных заказов
-      selectedIds: [], // Массив ID выбранных заказов
-      selectedOrder: null, // Объект для хранения данных выбранного заказа для модального окна
-      errorMessage: '', // Сообщение об ошибке
-      sortField: 'finishDate', // Поле для сортировки по умолчанию
-      sortDir: 'asc', // Направление сортировки по умолчанию
-      userSearch: '', // Поле для поиска по логину пользователя
+      orders: [],
+      selectedIds: [],
+      selectedOrder: null,
+      errorMessage: '',
+      sortField: 'finishDate',
+      sortDir: 'asc',
+      userSearch: '',
     };
   },
   computed: {
-    // Вычисляемое свойство для определения, выбраны ли все заказы
     allSelected() {
       return this.orders.length > 0 && this.selectedIds.length === this.orders.length;
     }
   },
   async mounted() {
-    // При загрузке компонента загружаем забронированные заказы
     await this.loadBookedOrders();
   },
   methods: {
-    // Метод для форматирования даты
     formatDate(dateStr) {
       if (!dateStr) return '';
-      // Используем try-catch для безопасного форматирования даты
       try {
         return new Date(dateStr).toLocaleString();
       } catch (e) {
         console.error("Ошибка форматирования даты:", e);
-        return dateStr; // Возвращаем оригинальную строку, если форматирование не удалось
+        return dateStr;
       }
     },
-    // Метод для получения названий книг из массива экземпляров
     getExampleNames(examples) {
       if (!examples || examples.length === 0) return 'Нет книг';
-      // Объединяем названия книг через запятую
       return examples.map(ex => ex?.name || 'Неизвестная книга').join(', ');
     },
-    // Метод для загрузки забронированных заказов с сервера
     async loadBookedOrders() {
-      this.errorMessage = ''; // Сбрасываем сообщение об ошибке
-      const token = localStorage.getItem('token'); // Получаем токен из локального хранилища
+      this.errorMessage = '';
+      const token = localStorage.getItem('token');
 
-      const conditions = [{ var: 'status', operator: 'equal', value: 'booked' }]; // Фильтр по статусу 'booked'
+      const conditions = [{ var: 'status', operator: 'equal', value: 'booked' }];
 
-      // Добавляем условие для поиска по логину пользователя, если поле поиска не пустое
       if (this.userSearch) {
-        // Предполагаем, что API поддерживает фильтрацию по полю login внутри объекта user
-        conditions.push({ var: 'user.login', operator: 'contain', value: this.userSearch });
+        conditions.push({ var: 'userLogin', operator: 'contain', value: this.userSearch });
       }
 
       try {
-        // Шаг 1: Получаем ID забронированных заказов
         const response = await fetch('http://localhost:3000/proxy/get-order-ids.json', {
           method: 'POST',
           headers: {
@@ -155,11 +145,11 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            conditions, // Передаем условия фильтрации и поиска
-            main_cond: 'and', // Указываем логическое И для условий
-            search: '', // Поиск не используется в этом случае
-            sort_col: this.sortField, // Поле для сортировки
-            sort_dir: this.sortDir // Направление сортировки
+            conditions,
+            main_cond: 'and',
+            search: '',
+            sort_col: this.sortField,
+            sort_dir: this.sortDir
           })
         });
 
@@ -167,67 +157,61 @@ export default {
 
         if (responseJson.error) {
           this.errorMessage = responseJson.error;
-          this.orders = []; // Очищаем список заказов при ошибке
+          this.orders = [];
         } else if (responseJson.result && responseJson.result.rows.length > 0) {
-          // Шаг 2: Получаем полную информацию о заказах по их ID
           const ordersRes = await fetch('http://localhost:3000/proxy/get-order-ids-out.json', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(responseJson.result) // Передаем результат первого запроса
+            body: JSON.stringify(responseJson.result)
           });
 
           const ordersData = await ordersRes.json();
 
           if (ordersData.error) {
             this.errorMessage = ordersData.error;
-            this.orders = []; // Очищаем список заказов при ошибке
+            this.orders = [];
           } else {
-            this.orders = ordersData.result.rows; // Сохраняем полученные данные о заказах
+            this.orders = ordersData.result.rows;
           }
         } else {
-          this.orders = []; // Если нет заказов с таким статусом, очищаем список
+          this.orders = [];
         }
       } catch (err) {
         console.error('Ошибка при загрузке забронированных заказов:', err);
-        this.errorMessage = 'Ошибка подключения к серверу'; // Сообщение об ошибке подключения
-        this.orders = []; // Очищаем список заказов при ошибке
+        this.errorMessage = 'Ошибка подключения к серверу';
+        this.orders = [];
       }
     },
-    // Метод для переключения сортировки
     toggleSort(field) {
       if (this.sortField === field) {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortField = field;
-        this.sortDir = 'asc'; // Сортировка по умолчанию по возрастанию при смене поля
+        this.sortDir = 'asc';
       }
-      this.loadBookedOrders(); // Перезагружаем данные с новой сортировкой
+      this.loadBookedOrders();
     },
-    // Метод для открытия модального окна с деталями заказа
     openOrderModal(order) {
-      this.selectedOrder = order; // Устанавливаем выбранный заказ
+      this.selectedOrder = order;
     },
-    // Метод для закрытия модального окна
     closeModal() {
-      this.selectedOrder = null; // Сбрасываем выбранный заказ
-      this.errorMessage = ''; // Сбрасываем сообщение об ошибке
+      this.selectedOrder = null;
+      this.errorMessage = '';
     },
-    // Метод для выбора/снятия выбора со всех заказов
     toggleSelectAll(event) {
       if (event.target.checked) {
-        this.selectedIds = this.orders.map(order => order.id); // Выбираем все ID заказов
+        this.selectedIds = this.orders.map(order => order.id);
       } else {
-        this.selectedIds = []; // Очищаем список выбранных ID
+        this.selectedIds = [];
       }
     },
-    // Метод для подтверждения выбранных заказов
     async approveSelectedOrders() {
-      if (!this.selectedIds.length) return; // Если нет выбранных заказов, выходим
-      this.errorMessage = ''; // Сбрасываем сообщение об ошибке
-      const token = localStorage.getItem('token'); // Получаем токен
+      if (!this.selectedIds.length) return;
+      this.errorMessage = '';
+      const token = localStorage.getItem('token');
 
       try {
         const response = await fetch('http://localhost:3000/proxy/approve-order-rent.json', {
@@ -236,27 +220,26 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ orderIds: this.selectedIds }) // Передаем массив ID выбранных заказов
+          body: JSON.stringify({orderIds: this.selectedIds})
         });
 
         const responseJson = await response.json();
 
         if (responseJson.error) {
-          this.errorMessage = responseJson.error; // Отображаем ошибку, если есть
+          this.errorMessage = responseJson.error;
         } else {
-          this.selectedIds = []; // Очищаем выбранные ID после успешного выполнения
-          await this.loadBookedOrders(); // Перезагружаем список заказов
+          this.selectedIds = [];
+          await this.loadBookedOrders();
         }
       } catch (err) {
         console.error('Ошибка при подтверждении заказов:', err);
-        this.errorMessage = 'Ошибка подключения к серверу при подтверждении заказов'; // Сообщение об ошибке
+        this.errorMessage = 'Ошибка подключения к серверу при подтверждении заказов';
       }
     },
-    // Метод для отклонения выбранных заказов
     async rejectSelectedOrders() {
-      if (!this.selectedIds.length) return; // Если нет выбранных заказов, выходим
-      this.errorMessage = ''; // Сбрасываем сообщение об ошибке
-      const token = localStorage.getItem('token'); // Получаем токен
+      if (!this.selectedIds.length) return;
+      this.errorMessage = '';
+      const token = localStorage.getItem('token');
 
       try {
         const response = await fetch('http://localhost:3000/proxy/reject-order-rent.js', {
@@ -265,23 +248,22 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ orderIds: this.selectedIds }) // Передаем массив ID выбранных заказов
+          body: JSON.stringify({orderIds: this.selectedIds})
         });
 
         const responseJson = await response.json();
 
         if (responseJson.error) {
-          this.errorMessage = responseJson.error; // Отображаем ошибку, если есть
+          this.errorMessage = responseJson.error;
         } else {
-          this.selectedIds = []; // Очищаем выбранные ID после успешного выполнения
-          await this.loadBookedOrders(); // Перезагружаем список заказов
+          this.selectedIds = [];
+          await this.loadBookedOrders();
         }
       } catch (err) {
         console.error('Ошибка при отклонении заказов:', err);
-        this.errorMessage = 'Ошибка подключения к серверу при отклонении заказов'; // Сообщение об ошибке
+        this.errorMessage = 'Ошибка подключения к серверу при отклонении заказов';
       }
     },
-    // Метод для возврата на предыдущую страницу (панель управления заказами)
     goBack() {
       this.$router.push('/orders');
     }
@@ -290,7 +272,6 @@ export default {
 </script>
 
 <style scoped>
-/* Стили, адаптированные из ExamplesView.vue */
 .orders-container {
   padding: 2rem;
 }
@@ -340,14 +321,13 @@ export default {
   transform: scale(1.05);
 }
 
-/* Стили для кнопок действий с заказами */
 .btn.approve-selected:hover {
-  background-color: #10b981; /* Зеленый */
+  background-color: #10b981;
   color: white;
 }
 
 .btn.reject-selected:hover {
-  background-color: #ef4444; /* Красный */
+  background-color: #ef4444;
   color: white;
 }
 
@@ -378,7 +358,6 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  /* Адаптируем колонки под данные заказа: Чекбокс, ID, Пользователь (Логин), Книги, Дата */
   grid-template-columns: 40px 1fr 2fr 3fr 1.5fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
@@ -413,7 +392,6 @@ export default {
   white-space: nowrap;
 }
 
-/* Стили для колонки пользователя с полем поиска */
 .user-column {
   display: flex;
   flex-direction: column;
@@ -457,11 +435,11 @@ export default {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 500px; /* Увеличиваем ширину модального окна для деталей */
+  width: 500px;
   max-width: 90%;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  max-height: 90vh; /* Ограничиваем высоту */
-  overflow-y: auto; /* Добавляем прокрутку, если контент не помещается */
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal h2 {
@@ -473,11 +451,11 @@ export default {
 .order-details-section {
   margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #eee; /* Разделитель между секциями */
+  border-bottom: 1px solid #eee;
 }
 
 .order-details-section:last-child {
-  border-bottom: none; /* Убираем разделитель для последней секции */
+  border-bottom: none;
   padding-bottom: 0;
   margin-bottom: 0;
 }
@@ -502,7 +480,7 @@ export default {
 
 .actions {
   display: flex;
-  justify-content: flex-end; /* Кнопка закрытия справа */
+  justify-content: flex-end;
   margin-top: 1.5rem;
 }
 
@@ -521,12 +499,10 @@ export default {
   gap: 1rem;
 }
 
-/* Дополнительные стили для лучшего отображения текста в ячейках, если он длинный */
-.table-row .cell:nth-child(3), /* Пользователь */
-.table-row .cell:nth-child(4) /* Книги */
-{
-  white-space: normal; /* Разрешаем перенос текста */
-  word-break: break-word; /* Разбиваем длинные слова */
+.table-row .cell:nth-child(3),
+.table-row .cell:nth-child(4) {
+  white-space: normal;
+  word-break: break-word;
 }
 
 </style>
