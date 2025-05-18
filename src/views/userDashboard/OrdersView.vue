@@ -55,7 +55,7 @@
           :key="order.id"
           class="table-row"
           @click="viewOrderDetails(order.id)" >
-        <div class="cell">{{ getStatusDisplayName(order.status) }}</div>
+        <div class="cell" :class="'status-' + order.status">{{ getStatusDisplayName(order.status) }}</div>
         <div class="cell">{{ formatDate(order.finishDate) }}</div>
         <div class="cell">
           {{ order.examples ? order.examples.length : 0 }} {{ order.examples && order.examples.length > 0 ? (order.examples.length === 1 ? 'книга' : (order.examples.length >=2 && order.examples.length <=4 ? 'книги' : 'книг')) : 'книг' }}
@@ -70,7 +70,7 @@
         <h2>Детали заказа №{{ selectedOrder.id }}</h2>
         <div class="info-group">
           <label>Статус:</label>
-          <p>{{ getStatusDisplayName(selectedOrder.status) || 'Не указан' }}</p>
+          <p :class="'status-' + selectedOrder.status">{{ getStatusDisplayName(selectedOrder.status) || 'Не указан' }}</p>
         </div>
         <div class="info-group">
           <label>Дата создания:</label>
@@ -383,7 +383,7 @@ export default {
 }
 
 .column-header {
-  cursor: pointer; /* Курсор-указатель при наведении */
+  cursor: pointer;
   user-select: none;
   display: flex;
   align-items: center;
@@ -392,8 +392,6 @@ export default {
 }
 
 .cell > .sortable, .column-header.sortable {
-  /* Эту комбинацию селекторов можно упростить до .column-header.sortable,
-     т.к. теперь все сортируемые заголовки имеют класс column-header */
   cursor: pointer;
   user-select: none;
 }
@@ -561,6 +559,32 @@ export default {
   color: #6b7280;
   font-size: 1.1rem;
 }
+
+/* Цвета статусов */
+.cell.status-active,
+.modal .info-group p.status-active {
+  color: #2E7D32; /* Темно-зеленый */
+  font-weight: bold;
+}
+
+.cell.status-rejected,
+.modal .info-group p.status-rejected {
+  color: #D32F2F; /* Темно-красный */
+  font-weight: bold;
+}
+
+.cell.status-closed,
+.modal .info-group p.status-closed {
+  color: #455A64; /* Темно-серый синий */
+  font-weight: bold;
+}
+
+.cell.status-booked,
+.modal .info-group p.status-booked {
+  color: #F57F17; /* Темно-желтый/оранжевый */
+  font-weight: bold;
+}
+
 
 @media (max-width: 768px) {
   .table-header,
