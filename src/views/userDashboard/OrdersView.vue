@@ -13,7 +13,17 @@
             <span style="margin-right: 0.3rem;">Статус</span>
             <span v-if="sortField === 'status'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
-          <input v-model="searchFields.status" @input="loadOrders" placeholder="Фильтр статуса..." class="header-filter-input"/>
+          <div class="status-filter-checkboxes">
+            <div v-for="(russianName, englishName) in statusMap" :key="englishName">
+              <input
+                  type="checkbox"
+                  :id="'status-' + englishName"
+                  v-model="selectedStatuses[englishName]"
+                  @change="loadOrders"
+              />
+              <label :for="'status-' + englishName">{{ russianName }}</label>
+            </div>
+          </div>
         </div>
         <div class="cell date-column">
           <div class="column-header sortable" @click="toggleFinishDateSort">
@@ -21,16 +31,16 @@
             <span v-if="sortField === 'finishDate'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
           <div class="filter-range">
-            <input type="text" v-model="searchFields.finishDate_from" @input="loadOrders" placeholder="Дата от (YYYY-MM-DD)"/>
-            <input type="text" v-model="searchFields.finishDate_to" @input="loadOrders" placeholder="Дата до (YYYY-MM-DD)"/>
+            <input type="text" v-model="searchFields.finishDate_from" @input="loadOrders" placeholder="Дата от (ГГГГ-ММ-ДД)"/>
+            <input type="text" v-model="searchFields.finishDate_to" @input="loadOrders" placeholder="Дата до (ГГГГ-ММ-ДД)"/>
           </div>
         </div>
         <div class="cell">
           Книги (кол-во)
         </div>
         <div class="cell sortable" @click="toggleCreatedAtSort">
-          Дата создания
-          <span v-if="sortField === 'createdAt'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          <span style="margin-right: 0.3rem;">Дата создания</span>
+          <span v-if="sortField === 'createdAt'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
         </div>
       </div>
 
@@ -47,7 +57,7 @@
           :key="order.id"
           class="table-row"
           @click="viewOrderDetails(order.id)" >
-        <div class="cell">{{ order.status }}</div>
+        <div class="cell">{{ getStatusDisplayName(order.status) }}</div>
         <div class="cell">{{ formatDate(order.finishDate) }}</div>
         <div class="cell">
           {{ order.examples ? order.examples.length : 0 }} {{ order.examples && order.examples.length > 0 ? (order.examples.length === 1 ? 'книга' : (order.examples.length >=2 && order.examples.length <=4 ? 'книги' : 'книг')) : 'книг' }}
@@ -62,7 +72,7 @@
         <h2>Детали заказа №{{ selectedOrder.id }}</h2>
         <div class="info-group">
           <label>Статус:</label>
-          <p>{{ selectedOrder.status || 'Не указан' }}</p>
+          <p>{{ getStatusDisplayName(selectedOrder.status) || 'Не указан' }}</p>
         </div>
         <div class="info-group">
           <label>Дата создания:</label>
@@ -99,9 +109,20 @@ export default {
       sortDir: 'desc',
       sortField: 'createdAt',
       searchFields: {
-        status: '',
         finishDate_from: '',
         finishDate_to: ''
+      },
+      statusMap: {
+        'active': 'Активен',
+        'rejected': 'Отклонен',
+        'closed': 'Закрыт',
+        'booked': 'Забронирован',
+      },
+      selectedStatuses: {
+        'active': true,
+        'rejected': true,
+        'closed': true,
+        'booked': true,
       },
       errorMessage: '',
       isLoading: false,
@@ -111,6 +132,9 @@ export default {
     await this.loadOrders();
   },
   methods: {
+    getStatusDisplayName(status) {
+      return this.statusMap[status] || status || 'Неизвестный статус';
+    },
     formatDate(dateStr) {
       if (!dateStr) return '';
       try {
@@ -134,9 +158,14 @@ export default {
 
       const conditions = [];
 
-      if (this.searchFields.status) {
-        conditions.push({var: 'status', operator: 'contain', value: this.searchFields.status});
+      const selectedStatusValues = Object.keys(this.selectedStatuses).filter(key => this.selectedStatuses[key]);
+
+      if (selectedStatusValues.length > 0) {
+        selectedStatusValues.forEach(status => {
+          conditions.push({ var: 'status', operator: 'contain', value: status });
+        });
       }
+
       if (this.searchFields.finishDate_from) {
         conditions.push({var: 'finishDate', operator: 'greater_or_equal', value: this.searchFields.finishDate_from});
       }
@@ -153,7 +182,7 @@ export default {
           },
           body: JSON.stringify({
             conditions,
-            main_cond: 'and',
+            main_cond: 'or',
             search: '',
             sort_col: this.sortField,
             sort_dir: this.sortDir
@@ -185,7 +214,6 @@ export default {
         const ordersData = await ordersRes.json();
         if (ordersData.error) {
           this.errorMessage = ordersData.error;
-          this.orders = [];
         } else {
           this.orders = ordersData.result.rows || ordersData.result.orders || [];
         }
@@ -341,11 +369,17 @@ export default {
   padding: 0.75rem 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Убрали white-space: nowrap; отсюда, чтобы фильтры могли использовать flex-direction: column */
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
+
+/* Вернули white-space: nowrap; для ячеек строк таблицы, чтобы данные не переносились */
+.table-row .cell {
+  white-space: nowrap;
+}
+
 
 .table-header .cell {
   align-items: flex-start;
@@ -361,15 +395,42 @@ export default {
 .column-header {
   cursor: pointer;
   user-select: none;
-  display: flex;
+  display: flex; /* Добавили flex для размещения текста и стрелки в ряд */
   align-items: center;
   margin-bottom: 0.25rem;
+  white-space: nowrap; /* Добавили nowrap, чтобы текст заголовка и стрелка были на одной строке */
 }
 
 .cell > .sortable, .column-header.sortable {
   cursor: pointer;
   user-select: none;
 }
+
+.status-filter-checkboxes {
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.9rem;
+}
+
+.status-filter-checkboxes > div {
+  display: flex;
+  align-items: center;
+}
+
+.status-filter-checkboxes input[type="checkbox"] {
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
+.status-filter-checkboxes label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
 
 .header-filter-input {
   margin-top: 5px;
