@@ -30,10 +30,6 @@
             <span style="margin-right: 0.3rem;">Дата завершения</span>
             <span v-if="sortField === 'finishDate'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
-          <div class="filter-range">
-            <input type="text" v-model="searchFields.finishDate_from" @input="loadOrders" placeholder="Дата от (ГГГГ-ММ-ДД)"/>
-            <input type="text" v-model="searchFields.finishDate_to" @input="loadOrders" placeholder="Дата до (ГГГГ-ММ-ДД)"/>
-          </div>
         </div>
         <div class="cell">
           Книги (кол-во)
@@ -108,10 +104,7 @@ export default {
       selectedOrder: null,
       sortDir: 'desc',
       sortField: 'createdAt',
-      searchFields: {
-        finishDate_from: '',
-        finishDate_to: ''
-      },
+      searchFields: {},
       statusMap: {
         'active': 'Активен',
         'rejected': 'Отклонен',
@@ -164,13 +157,6 @@ export default {
         selectedStatusValues.forEach(status => {
           conditions.push({ var: 'status', operator: 'contain', value: status });
         });
-      }
-
-      if (this.searchFields.finishDate_from) {
-        conditions.push({var: 'finishDate', operator: 'greater_or_equal', value: this.searchFields.finishDate_from});
-      }
-      if (this.searchFields.finishDate_to) {
-        conditions.push({var: 'finishDate', operator: 'less_or_equal', value: this.searchFields.finishDate_to});
       }
 
       try {
@@ -266,7 +252,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ order: { id } })
+          body: JSON.stringify({order: {id}})
         });
 
         const data = await res.json();
@@ -311,8 +297,12 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .header-row {
@@ -369,13 +359,11 @@ export default {
   padding: 0.75rem 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* Убрали white-space: nowrap; отсюда, чтобы фильтры могли использовать flex-direction: column */
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-/* Вернули white-space: nowrap; для ячеек строк таблицы, чтобы данные не переносились */
 .table-row .cell {
   white-space: nowrap;
 }
@@ -395,10 +383,10 @@ export default {
 .column-header {
   cursor: pointer;
   user-select: none;
-  display: flex; /* Добавили flex для размещения текста и стрелки в ряд */
+  display: flex;
   align-items: center;
   margin-bottom: 0.25rem;
-  white-space: nowrap; /* Добавили nowrap, чтобы текст заголовка и стрелка были на одной строке */
+  white-space: nowrap;
 }
 
 .cell > .sortable, .column-header.sortable {
@@ -481,8 +469,12 @@ export default {
 }
 
 @keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
@@ -497,8 +489,14 @@ export default {
 }
 
 @keyframes zoomInModal {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .modal h2 {
