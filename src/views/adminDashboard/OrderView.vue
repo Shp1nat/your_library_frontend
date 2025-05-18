@@ -24,7 +24,6 @@ export default {
 .orders-container {
   padding: 40px;
   background: #f9fafb;
-  min-height: 100vh;
 }
 
 .orders-title {
