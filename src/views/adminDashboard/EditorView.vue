@@ -26,7 +26,6 @@ export default {
 .editor-container {
   padding: 40px;
   background: #f9fafb;
-  min-height: 100vh;
 }
 
 .editor-title {
