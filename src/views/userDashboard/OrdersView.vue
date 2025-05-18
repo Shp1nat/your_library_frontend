@@ -400,8 +400,9 @@ export default {
 .status-filter-checkboxes {
   margin-top: 5px;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
   font-size: 0.9rem;
 }
 
