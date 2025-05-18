@@ -91,48 +91,39 @@
 
 <script>
 export default {
-  name: 'UserOrders', // Изменено название компонента
+  name: 'UserOrders',
   data() {
     return {
-      orders: [], // Теперь храним заказы
-      selectedOrder: null, // Для модального окна деталей заказа
+      orders: [],
+      selectedOrder: null,
       sortDir: 'desc',
-      // Поля сортировки теперь связаны с заказом. Добавим createdAt по умолчанию, если API его возвращает.
-      sortField: 'createdAt', // Или 'finishDate', в зависимости от предпочтений
-      searchFields: { // Поля для фильтрации заказов
+      sortField: 'createdAt',
+      searchFields: {
         status: '',
         finishDate_from: '',
         finishDate_to: ''
-        // Фильтрация по книгам внутри заказа требует поддержки на бэкенде
       },
       errorMessage: '',
-      isLoading: false, // Флаг загрузки
+      isLoading: false,
     };
   },
-  // Нет computed свойств для выбора всех, так как нет чекбоксов
   async mounted() {
-    // Загрузка данных при монтировании компонента
     await this.loadOrders();
   },
   methods: {
-    // Метод для форматирования даты, остается без изменений
     formatDate(dateStr) {
       if (!dateStr) return '';
-      // Пробуем распарсить дату. Важно учесть возможные форматы от API.
-      // Если API возвращает ISO строки, new Date() сработает хорошо.
-      // Если форматы другие, возможно, потребуется сторонняя библиотека (moment.js, date-fns)
       try {
         const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric' };
-        return new Date(dateStr).toLocaleString(undefined, options); // undefined для локальных настроек
+        return new Date(dateStr).toLocaleString(undefined, options);
       } catch (e) {
         console.error("Invalid date string:", dateStr, e);
         return 'Некорректная дата';
       }
     },
-    // Метод для загрузки заказов с учетом фильтров и сортировки
-    async loadOrders() { // Переименовано
+    async loadOrders() {
       this.errorMessage = '';
-      this.isLoading = true; // Устанавливаем флаг загрузки
+      this.isLoading = true;
       const token = localStorage.getItem('token');
       if (!token) {
         this.errorMessage = 'Пользователь не авторизован.';
@@ -143,14 +134,10 @@ export default {
 
       const conditions = [];
 
-      // Формирование условий для запроса на основе полей поиска заказов
       if (this.searchFields.status) {
-        // Предполагаем, что фильтрация по статусу поддерживается оператором 'contain' или '='
         conditions.push({var: 'status', operator: 'contain', value: this.searchFields.status});
-        // Если API требует точное совпадение: conditions.push({var: 'status', operator: '=', value: this.searchFields.status});
       }
       if (this.searchFields.finishDate_from) {
-        // Предполагаем, что API поддерживает сравнение дат и формат YYYY-MM-DD
         conditions.push({var: 'finishDate', operator: 'greater_or_equal', value: this.searchFields.finishDate_from});
       }
       if (this.searchFields.finishDate_to) {
@@ -158,8 +145,7 @@ export default {
       }
 
       try {
-        // Шаг 1: Получение ID заказов по условиям
-        const idResponse = await fetch('http://localhost:3000/proxy/get-user-order-ids.json', { // Новая ручка
+        const idResponse = await fetch('http://localhost:3000/proxy/get-user-order-ids.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -167,9 +153,9 @@ export default {
           },
           body: JSON.stringify({
             conditions,
-            main_cond: 'and', // Используем 'and' для комбинирования фильтров
-            search: '', // Пустой общий поиск
-            sort_col: this.sortField, // Поле сортировки для заказов
+            main_cond: 'and',
+            search: '',
+            sort_col: this.sortField,
             sort_dir: this.sortDir
           })
         });
@@ -179,23 +165,20 @@ export default {
         if (idResponseJson.error) {
           this.errorMessage = idResponseJson.error;
           this.orders = [];
-          return; // Прерываем выполнение при ошибке
+          return;
         }
 
-        // Проверяем, есть ли ID для получения детальных данных
         if (!idResponseJson.result?.rows?.length) {
           this.orders = [];
-          return; // Если ID нет, завершаем
+          return;
         }
 
-        // Шаг 2: Получение детальных данных по полученным ID
-        const ordersRes = await fetch('http://localhost:3000/proxy/get-user-order-ids-out.json', { // Новая ручка
+        const ordersRes = await fetch('http://localhost:3000/proxy/get-user-order-ids-out.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          // Отправляем только result из первого запроса, как в оригинале
           body: JSON.stringify(idResponseJson.result)
         });
 
@@ -204,19 +187,16 @@ export default {
           this.errorMessage = ordersData.error;
           this.orders = [];
         } else {
-          // Предполагаем, что детальные данные заказов находятся в ordersData.result.rows
-          // Или, возможно, в ordersData.result.orders, если структура отличается
-          this.orders = ordersData.result.rows || ordersData.result.orders || []; // Гибкость на случай разных структур
+          this.orders = ordersData.result.rows || ordersData.result.orders || [];
         }
       } catch (err) {
         console.error('Ошибка при загрузке заказов:', err);
         this.errorMessage = 'Ошибка подключения к серверу или получения данных заказов';
         this.orders = [];
       } finally {
-        this.isLoading = false; // Снимаем флаг загрузки
+        this.isLoading = false;
       }
     },
-    // Методы сортировки для полей заказа
     toggleStatusSort() {
       if (this.sortField === 'status') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -231,21 +211,20 @@ export default {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortField = 'finishDate';
-        this.sortDir = 'desc'; // Даты завершения чаще сортируют по убыванию
+        this.sortDir = 'desc';
       }
       this.loadOrders();
     },
-    toggleCreatedAtSort() { // Добавляем сортировку по дате создания
+    toggleCreatedAtSort() {
       if (this.sortField === 'createdAt') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortField = 'createdAt';
-        this.sortDir = 'desc'; // Даты создания чаще сортируют по убыванию
+        this.sortDir = 'desc';
       }
       this.loadOrders();
     },
-    // Метод для просмотра деталей заказа (открывает модальное окно)
-    async viewOrderDetails(id) { // Переименовано
+    async viewOrderDetails(id) {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
       if (!token) {
@@ -253,25 +232,20 @@ export default {
         return;
       }
       try {
-        // Запрос на получение данных конкретного заказа
-        const res = await fetch('http://localhost:3000/proxy/get-user-order-ids-out.json', { // Новая ручка
+        const res = await fetch('http://localhost:3000/proxy/get-user-order-ids-out.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          // Передаем структуру для получения одного заказа по ID
-          // Предполагаем, что ручка принимает { order: { id } } или похожую структуру
-          body: JSON.stringify({ order: { id } }) // Изменено на order
+          body: JSON.stringify({ order: { id } })
         });
 
         const data = await res.json();
         if (data.error) {
           this.errorMessage = data.error;
-          this.selectedOrder = null; // Убедимся, что модальное окно не откроется или закроется
+          this.selectedOrder = null;
         } else if (data.result?.order) {
-          // Если данные получены, сохраняем их для отображения в модальном окне
-          // Предполагаем, что детальный заказ находится в data.result.order
           this.selectedOrder = data.result.order;
         } else {
           this.errorMessage = 'Детали заказа не найдены.';
@@ -283,18 +257,15 @@ export default {
         this.selectedOrder = null;
       }
     },
-    // Метод для закрытия модального окна
     closeModal() {
-      this.selectedOrder = null; // Теперь сбрасываем selectedOrder
+      this.selectedOrder = null;
     }
-    // Метод toggleSelectAll и placeOrder удалены за ненадобностью
   }
 };
 </script>
 
 <style scoped>
-/* Используем тот же базовый стиль */
-.orders-container { /* Изменено название контейнера */
+.orders-container {
   padding: 2rem;
   font-family: sans-serif;
 }
@@ -329,11 +300,6 @@ export default {
   color: #1f2937;
 }
 
-/* Стили кнопок оформления удалены, оставим базовые стили btn если они используются где-то еще */
-/* .btn { ... } */
-/* .btn.order { ... } */
-/* .btn:disabled { ... } */
-
 
 .table-container {
   border: 1px solid #d1d5db;
@@ -346,10 +312,8 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  /* Новая сетка колонок: Статус (1.5), Дата завершения (2), Книги (1.5), Дата создания (2) */
-  /* Подстройте ширину по вашим нуждам */
   grid-template-columns: 1.5fr 2fr 1.5fr 2fr;
-  align-items: start; /* Выравнивание по верху */
+  align-items: start;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -377,7 +341,7 @@ export default {
   padding: 0.75rem 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap; /* Предотвратить перенос в ячейках таблицы */
+  white-space: nowrap;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -388,7 +352,6 @@ export default {
   justify-content: flex-start;
 }
 
-/* Стили для специфичных колонок и фильтров */
 .status-column,
 .date-column {
   display: flex;
@@ -422,13 +385,13 @@ export default {
 
 .filter-range {
   display: flex;
-  flex-direction: column; /* Изменено на column для лучшей адаптации дат */
+  flex-direction: column;
   gap: 0.5rem;
   margin-top: 0.25rem;
 }
 
 .filter-range input {
-  width: 100%; /* Полная ширина в колонке */
+  width: 100%;
   padding: 0.4rem;
   font-size: 0.9rem;
   border: 1px solid #d1d5db;
@@ -445,7 +408,6 @@ export default {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Стили модального окна */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -498,7 +460,7 @@ export default {
 }
 
 .info-group p,
-.info-group ul { /* Добавлены стили для списка книг */
+.info-group ul {
   margin: 0;
   padding: 0.6rem 0.8rem;
   border: 1px solid #e5e7eb;
@@ -507,28 +469,27 @@ export default {
   color: #1f2937;
   word-break: break-word;
   white-space: pre-wrap;
-  list-style: none; /* Убираем стандартные маркеры списка */
+  list-style: none;
 }
 
 .info-group ul {
-  padding-left: 0.8rem; /* Добавляем небольшой отступ для списка */
-  white-space: normal; /* Разрешаем перенос строк в списке книг */
+  padding-left: 0.8rem;
+  white-space: normal;
 }
 
 .info-group ul li {
-  margin-bottom: 0.4rem; /* Отступ между элементами списка */
-  padding-left: 1.2rem; /* Отступ для маркера списка */
+  margin-bottom: 0.4rem;
+  padding-left: 1.2rem;
   position: relative;
 }
 
-.info-group ul li::before { /* Создаем кастомный маркер списка */
-  content: '•'; /* Маркер - точка */
+.info-group ul li::before {
+  content: '•';
   position: absolute;
   left: 0;
-  color: #374151; /* Цвет маркера */
+  color: #374151;
   font-weight: bold;
 }
-
 
 .empty-table-message {
   text-align: center;
@@ -537,11 +498,10 @@ export default {
   font-size: 1.1rem;
 }
 
-/* Стили для маленьких экранов */
 @media (max-width: 768px) {
   .table-header,
   .table-row {
-    grid-template-columns: 1fr 1.5fr 1fr 1.5fr; /* Скорректировать ширину колонок */
+    grid-template-columns: 1fr 1.5fr 1fr 1.5fr;
     font-size: 0.9rem;
   }
 
@@ -556,9 +516,8 @@ export default {
   }
 
   .filter-range {
-    flex-direction: column; /* Убедимся, что на маленьких экранах даты идут одна под другой */
+    flex-direction: column;
   }
-
 
   .title {
     font-size: 1.5rem;
@@ -583,7 +542,7 @@ export default {
   }
 
   .info-group ul li {
-    padding-left: 1rem; /* Меньший отступ для маркера */
+    padding-left: 1rem;
   }
 }
 
