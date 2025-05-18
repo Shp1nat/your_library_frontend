@@ -35,8 +35,10 @@
           Книги (кол-во)
         </div>
         <div class="cell sortable" @click="toggleCreatedAtSort">
-          <span style="margin-right: 0.3rem;">Дата создания</span>
-          <span v-if="sortField === 'createdAt'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          <div class="column-header">
+            <span style="margin-right: 0.3rem;">Дата создания</span>
+            <span v-if="sortField === 'createdAt'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
         </div>
       </div>
 
@@ -381,7 +383,7 @@ export default {
 }
 
 .column-header {
-  cursor: pointer;
+  cursor: pointer; /* Курсор-указатель при наведении */
   user-select: none;
   display: flex;
   align-items: center;
@@ -390,9 +392,12 @@ export default {
 }
 
 .cell > .sortable, .column-header.sortable {
+  /* Эту комбинацию селекторов можно упростить до .column-header.sortable,
+     т.к. теперь все сортируемые заголовки имеют класс column-header */
   cursor: pointer;
   user-select: none;
 }
+
 
 .status-filter-checkboxes {
   margin-top: 5px;
