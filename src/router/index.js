@@ -8,6 +8,7 @@ import OrdersLayout from '@/layouts/OrdersLayout.vue'
 import VacanciesLayout from '@/layouts/VacanciesLayout.vue'
 import EditorPage from '@/views/adminDashboard/EditorView.vue'
 import OrderAdminPage from '@/views/adminDashboard/OrderView.vue'
+import VacancyAdminPage from '@/views/adminDashboard/VacanciesView.vue'
 
 import AuthorsView from '@/views/editor/AuthorsView.vue'
 import GenresView from '@/views/editor/GenresView.vue'
@@ -19,6 +20,10 @@ import PublishersView from '@/views/editor/PublishersView.vue'
 import BookedOrdersView from '@/views/adminOrders/BookedOrdersView.vue'
 import ActiveOrdersView from '@/views/adminOrders/ActiveOrdersView.vue'
 import ClosedAndRejectedOrdersView from '@/views/adminOrders/ClosedAndRejectedOrdersView.vue'
+
+import waitingVacanciesView from '@/views/adminVacancies/WaitingVacanciesView.vue'
+import rejectedVacanciesView from '@/views/adminVacancies/RejectedVacanciesView.vue'
+import acceptedVacanciesView from '@/views/adminVacancies/AcceptedVacanciesView.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -45,7 +50,12 @@ const routes = [
       { path: 'orders', component: OrderAdminPage },
       { path: 'orders/booked', component: BookedOrdersView },
       { path: 'orders/active', component: ActiveOrdersView },
-      { path: 'orders/closed-rejected', component: ClosedAndRejectedOrdersView }
+      { path: 'orders/closed-rejected', component: ClosedAndRejectedOrdersView },
+
+      { path: 'vacancies', component: VacancyAdminPage },
+      { path: 'vacancies/waiting', component: waitingVacanciesView },
+      { path: 'vacancies/accepted', component: acceptedVacanciesView },
+      { path: 'vacancies/rejected', component: rejectedVacanciesView }
     ]
   }
 ]
