@@ -152,7 +152,7 @@ export default {
 
       if (selectedStatusValues.length > 0 && selectedStatusValues.length < allStatuses.length) {
         selectedStatusValues.forEach(status => {
-          conditions.push({var: 'status', operator: 'eq', value: status});
+          conditions.push({var: 'status', operator: 'contain', value: status});
         });
         mainCond = 'or';
       }
