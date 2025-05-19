@@ -46,7 +46,7 @@
       </div>
 
       <div v-if="!isLoading && !vacancies.length && !errorMessage" class="empty-table-message">
-        Список вакансий со статусом 'Ожидание' пуст.
+        Список активных откликов пуст.
       </div>
 
 
@@ -151,7 +151,7 @@ export default {
         return;
       }
 
-      const conditions = [{ var: 'status', operator: 'eq', value: 'waiting' }];
+      const conditions = [{ var: 'status', operator: 'contain', value: 'waiting' }];
 
       if (this.textSearch) {
         conditions.push({ var: 'text', operator: 'contain', value: this.textSearch });
@@ -235,9 +235,6 @@ export default {
     },
     async approveSelectedVacancies() {
       if (!this.selectedIds.length) return;
-      if (!confirm(`Вы уверены, что хотите принять выбранные отклики (${this.selectedIds.length})?`)) {
-        return;
-      }
       this.errorMessage = '';
       const token = localStorage.getItem('token');
       if (!token) {
@@ -246,7 +243,7 @@ export default {
       }
 
       try {
-        const response = await fetch('http://localhost:3000/proxy/approve-vacancy.json', {
+        const response = await fetch('http://localhost:3000/proxy/accept-vacancy.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -269,9 +266,6 @@ export default {
     },
     async rejectSelectedVacancies() {
       if (!this.selectedIds.length) return;
-      if (!confirm(`Вы уверены, что хотите отклонить выбранные отклики (${this.selectedIds.length})?`)) {
-        return;
-      }
       this.errorMessage = '';
       const token = localStorage.getItem('token');
       if (!token) {
