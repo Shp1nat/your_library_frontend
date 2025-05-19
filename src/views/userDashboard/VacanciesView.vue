@@ -42,7 +42,7 @@
       </div>
 
       <div v-if="!isLoading && !vacancies.length && !errorMessage" class="empty-table-message">
-        Ваша история вакансий пуста.
+        Ваш список вакансий выбранного типа пуст.
       </div>
 
       <div
@@ -127,7 +127,7 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return '';
       try {
-        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric' };
+        const options = {year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric'};
         return new Date(dateStr).toLocaleString(undefined, options);
       } catch (e) {
         return 'Некорректная дата';
@@ -148,13 +148,14 @@ export default {
       const allStatuses = Object.keys(this.statusMap);
       const selectedStatusValues = Object.keys(this.selectedStatuses).filter(key => this.selectedStatuses[key]);
 
-      if (selectedStatusValues.length > 0 && selectedStatusValues.length < allStatuses.length) {
-        conditions.push({
-          main_cond: 'or',
-          sub_cond: selectedStatusValues.map(status => ({ var: 'status', operator: 'eq', value: status }))
-        });
-      }
+      let mainCond = 'and';
 
+      if (selectedStatusValues.length > 0 && selectedStatusValues.length < allStatuses.length) {
+        selectedStatusValues.forEach(status => {
+          conditions.push({var: 'status', operator: 'contain', value: status});
+        });
+        mainCond = 'or';
+      }
 
       try {
         const idResponse = await fetch('http://localhost:3000/proxy/get-user-vacancy-ids.json', {
@@ -165,7 +166,7 @@ export default {
           },
           body: JSON.stringify({
             conditions,
-            main_cond: 'and',
+            main_cond: mainCond,
             search: '',
             sort_col: this.sortField,
             sort_dir: this.sortDir
@@ -185,19 +186,13 @@ export default {
           return;
         }
 
-        const rows = idResponseJson.result.rows;
-        if (rows.length === 0) {
-          this.vacancies = [];
-          return;
-        }
-
         const vacanciesRes = await fetch('http://localhost:3000/proxy/get-user-vacancy-ids-out.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ rows })
+          body: JSON.stringify(idResponseJson.result)
         });
 
         const vacanciesData = await vacanciesRes.json();
@@ -297,7 +292,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ vacancy: {text: this.newVacancyText}})
+          body: JSON.stringify({vacancy: {text: this.newVacancyText}})
         });
         const data = await res.json();
 
