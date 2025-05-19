@@ -2,7 +2,7 @@
   <div class="vacancies-container">
     <div class="header-row">
       <button class="btn back-button" @click="goBack">⬅ Назад</button>
-      <h1 class="title">Отклики на вакансии: Ожидание</h1>
+      <h1 class="title">Активные отклики</h1>
     </div>
 
     <div class="top-bar">
@@ -69,6 +69,15 @@
       <div class="modal">
         <h2>Детали отклика на вакансию #{{ selectedVacancy.id }}</h2>
         <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+        <div class="vacancy-details-section">
+          <h3>Информация о пользователе</h3>
+          <p><strong>ID:</strong> {{ selectedVacancy.user?.id }}</p>
+          <p><strong>Логин:</strong> {{ selectedVacancy.user?.login }}</p>
+          <p><strong>ФИО:</strong> {{ selectedVacancy.user ? `${selectedVacancy.user.lastname || ''} ${selectedVacancy.user.name || ''} ${selectedVacancy.user.patronymic || ''}`.trim() || 'Неизвестно' : 'Неизвестно' }}</p>
+          <p><strong>Возраст:</strong> {{ selectedVacancy.user?.age }}</p>
+          <p><strong>Штрафные баллы:</strong> {{ selectedVacancy.user?.penaltyPoints }}</p>
+        </div>
 
         <div class="vacancy-details-section">
           <h3>Информация об отклике</h3>
@@ -142,7 +151,7 @@ export default {
         return;
       }
 
-      const conditions = [{ var: 'status', operator: 'contain', value: 'waiting' }];
+      const conditions = [{ var: 'status', operator: 'eq', value: 'waiting' }];
 
       if (this.textSearch) {
         conditions.push({ var: 'text', operator: 'contain', value: this.textSearch });
