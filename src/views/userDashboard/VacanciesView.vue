@@ -2,6 +2,7 @@
   <div class="vacancies-container">
     <div class="header-row">
       <h1 class="title">Мои вакансии</h1>
+      <button class="create-button" @click="openCreateModal">Создать вакансию</button>
     </div>
 
     <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
@@ -73,6 +74,20 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showCreateModal" class="modal-overlay" @click.self="closeCreateModal">
+      <div class="modal">
+        <h2>Создать новую вакансию</h2>
+        <div class="info-group">
+          <label for="vacancyText">Текст вакансии:</label>
+          <textarea id="vacancyText" v-model="newVacancyText" rows="6" class="modal-textarea"></textarea>
+        </div>
+        <button @click="createVacancy" :disabled="isCreating" class="modal-button">
+          {{ isCreating ? 'Создание...' : 'Создать' }}
+        </button>
+        <button @click="closeCreateModal" class="modal-button secondary">Отмена</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -83,6 +98,8 @@ export default {
     return {
       vacancies: [],
       selectedVacancy: null,
+      showCreateModal: false,
+      newVacancyText: '',
       sortDir: 'desc',
       sortField: 'updatedAt',
       statusMap: {
@@ -97,6 +114,7 @@ export default {
       },
       errorMessage: '',
       isLoading: false,
+      isCreating: false,
     };
   },
   async mounted() {
@@ -127,13 +145,13 @@ export default {
       }
 
       const conditions = [];
-
+      const allStatuses = Object.keys(this.statusMap);
       const selectedStatusValues = Object.keys(this.selectedStatuses).filter(key => this.selectedStatuses[key]);
 
-      if (selectedStatusValues.length > 0 && selectedStatusValues.length < Object.keys(this.statusMap).length) {
+      if (selectedStatusValues.length > 0 && selectedStatusValues.length < allStatuses.length) {
         conditions.push({
           main_cond: 'or',
-          sub_cond: selectedStatusValues.map(status => ({var: 'status', operator: 'eq', value: status}))
+          sub_cond: selectedStatusValues.map(status => ({ var: 'status', operator: 'eq', value: status }))
         });
       }
 
@@ -167,7 +185,11 @@ export default {
           return;
         }
 
-        const vacancyIds = idResponseJson.result.rows.map(row => row.id);
+        const rows = idResponseJson.result.rows;
+        if (rows.length === 0) {
+          this.vacancies = [];
+          return;
+        }
 
         const vacanciesRes = await fetch('http://localhost:3000/proxy/get-user-vacancy-ids-out.json', {
           method: 'POST',
@@ -175,7 +197,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({vacancyIds})
+          body: JSON.stringify({ rows })
         });
 
         const vacanciesData = await vacanciesRes.json();
@@ -243,6 +265,53 @@ export default {
     },
     closeModal() {
       this.selectedVacancy = null;
+    },
+    openCreateModal() {
+      this.showCreateModal = true;
+      this.newVacancyText = '';
+      this.errorMessage = '';
+    },
+    closeCreateModal() {
+      this.showCreateModal = false;
+      this.newVacancyText = '';
+    },
+    async createVacancy() {
+      this.errorMessage = '';
+      this.isCreating = true;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        this.errorMessage = 'Пользователь не авторизован.';
+        this.isCreating = false;
+        return;
+      }
+      if (!this.newVacancyText.trim()) {
+        this.errorMessage = 'Текст вакансии не может быть пустым.';
+        this.isCreating = false;
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3000/proxy/make-vacancy.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ vacancy: {text: this.newVacancyText}})
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          this.errorMessage = data.error;
+        } else {
+          this.closeCreateModal();
+          await this.loadVacancies();
+        }
+      } catch (err) {
+        this.errorMessage = 'Ошибка подключения к серверу при создании вакансии';
+      } finally {
+        this.isCreating = false;
+      }
     }
   }
 };
@@ -277,15 +346,32 @@ export default {
 
 .header-row {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .title {
   font-size: 2rem;
   font-weight: bold;
   color: #1f2937;
+}
+
+.create-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.create-button:hover {
+  background-color: #2563eb;
 }
 
 
@@ -526,6 +612,52 @@ export default {
   font-weight: bold;
 }
 
+.modal-textarea {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 100px;
+  font-family: sans-serif;
+  color: #1f2937;
+  background-color: #f9fafb;
+}
+
+.modal-button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  margin-top: 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.modal-button:hover {
+  background-color: #2563eb;
+}
+
+.modal-button:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+.modal-button.secondary {
+  background-color: #6b7280;
+}
+
+.modal-button.secondary:hover {
+  background-color: #4b5563;
+}
+
+
 .empty-table-message {
   text-align: center;
   padding: 2rem;
@@ -535,24 +667,38 @@ export default {
 
 .cell.status-waiting,
 .modal .info-group p.status-waiting {
-  color: #F57F17; /* Amber/Orange */
+  color: #F57F17;
   font-weight: bold;
 }
 
 .cell.status-rejected,
 .modal .info-group p.status-rejected {
-  color: #D32F2F; /* Red */
+  color: #D32F2F;
   font-weight: bold;
 }
 
 .cell.status-accepted,
 .modal .info-group p.status-accepted {
-  color: #2E7D32; /* Green */
+  color: #2E7D32;
   font-weight: bold;
 }
 
 
 @media (max-width: 768px) {
+  .header-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .title {
+    margin-bottom: 0.5rem;
+  }
+
+  .create-button {
+    width: 100%;
+    text-align: center;
+  }
+
   .table-header,
   .table-row {
     grid-template-columns: 1fr 1.5fr 2fr;
@@ -597,6 +743,12 @@ export default {
 
   .info-group ul li {
     padding-left: 1rem;
+  }
+
+  .modal-button {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
   }
 }
 
