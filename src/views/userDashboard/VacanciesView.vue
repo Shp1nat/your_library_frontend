@@ -42,7 +42,7 @@
       </div>
 
       <div v-if="!isLoading && !vacancies.length && !errorMessage" class="empty-table-message">
-        Ваш список вакансий выбранного типа пуст.
+        Ваш список откликов выбранного типа пуст.
       </div>
 
       <div
