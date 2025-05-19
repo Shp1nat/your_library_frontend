@@ -42,6 +42,10 @@
         <label for="age">Возраст</label>
         <input id="age" v-model="user.age" type="number" min="1" />
       </div>
+      <div class="form-group">
+        <label>Штрафные очки</label>
+        <p class="penalty-points-display">{{ user.penaltyPoints }}</p>
+      </div>
       <button type="submit" class="save-button">Сохранить</button>
 
       <div v-if="successMessage" class="message success-message">
@@ -60,13 +64,16 @@ export default {
   data() {
     return {
       user: {
+        id: null, // Добавлено id, предполагая, что он приходит с бэкенда и нужен для сохранения
         login: '',
         name: '',
         lastname: '',
         patronymic: '',
         age: null,
         avatar: null,
-        picture: null
+        picture: null,
+        // Добавлено поле для штрафных очков
+        penaltyPoints: null
       },
       avatarChanged: false,
       successMessage: '',
@@ -85,23 +92,37 @@ export default {
         this.user.avatar = file;
         this.avatarChanged = true;
         this.avatarUploadMessage = 'Изображение загружено ✅';
+        // Optionally display a preview of the new image before saving
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.user.picture = e.target.result.split(',')[1]; // Save base64 string (without data:image/... part)
+        };
+        reader.readAsDataURL(file);
       } else {
         this.avatarUploadMessage = '';
       }
     },
     removeAvatar() {
       this.user.picture = null;
-      this.user.avatar = null;
+      this.user.avatar = null; // Clear the file object as well
       this.avatarChanged = true;
+      this.avatarUploadMessage = 'Изображение удалено ❌';
     },
     async saveProfile() {
       this.successMessage = '';
       this.errorMessage = '';
 
       const token = localStorage.getItem('token');
+      if (!token) {
+        this.errorMessage = 'Ошибка: Токен авторизации отсутствует.';
+        return;
+      }
+
       const formData = new FormData();
 
+      // Включаем id пользователя в данные для сохранения, предполагая, что бэкенд его ожидает для обновления
       formData.append('user', JSON.stringify({
+        id: this.user.id,
         login: this.user.login,
         name: this.user.name,
         lastname: this.user.lastname,
@@ -110,50 +131,84 @@ export default {
       }));
       formData.append('avatarChanged', JSON.stringify(this.avatarChanged));
 
-      if (this.user.avatar) {
+      // Прикрепляем файл аватара только если он был изменен и не удален
+      if (this.avatarChanged && this.user.avatar) {
         formData.append('avatar', this.user.avatar);
+      } else if (this.avatarChanged && !this.user.picture) {
+        // Случай, когда аватар был удален. Бэкенд должен это обработать.
+        // Можно добавить специальный флаг или отправить пустое значение для picture
+        // В данном случае, флаг avatarChanged=true и отсутствие файла 'avatar' может сигнализировать об удалении
       }
+
+
       try {
         const response = await fetch('http://localhost:3000/proxy/update-profile.json', {
           method: 'POST',
           headers: {
+            // Заголовки Content-Type и другие могут быть автоматически установлены FormData,
+            // но для авторизации заголовок нужен
             'Authorization': `Bearer ${token}`
           },
           body: formData
         });
+
+        if (!response.ok) {
+          // Обработка HTTP ошибок (например, 401 Unauthorized, 500 Internal Server Error)
+          const errorText = await response.text();
+          throw new Error(`Ошибка HTTP: ${response.status} - ${errorText}`);
+        }
+
         const data = await response.json();
+
         if (data.error) {
           this.errorMessage = data.error;
         } else {
           this.successMessage = 'Информация успешно сохранёна!';
+          // Сброс флага изменения аватара после успешного сохранения
           this.avatarChanged = false;
+          // Перезагрузка данных пользователя для отображения актуальной информации (например, нового base64 аватара с бэкенда)
           await this.fetchUserData();
         }
       } catch (err) {
         console.error('Ошибка при сохранении профиля', err);
-        this.errorMessage = 'Не удалось сохранить профиль.';
+        this.errorMessage = `Не удалось сохранить профиль: ${err.message || err}`;
       }
     },
     async fetchUserData() {
       const token = localStorage.getItem('token');
+      if (!token) {
+        this.errorMessage = 'Ошибка: Токен авторизации отсутствует. Пожалуйста, войдите снова.';
+        // Возможно, перенаправить на страницу входа
+        return;
+      }
       try {
         const response = await fetch('http://localhost:3000/proxy/get-user-info.json', {
-          method: 'POST',
+          method: 'POST', // Обычно для получения данных используют GET, но в данном API используется POST
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
         });
+
+        if (!response.ok) {
+          // Обработка HTTP ошибок
+          const errorText = await response.text();
+          throw new Error(`Ошибка HTTP: ${response.status} - ${errorText}`);
+        }
+
         const data = await response.json();
+
         if (data.error) {
           this.errorMessage = data.error;
         } else {
+          // Предполагается, что data.result содержит все поля пользователя из БД, включая id и penaltyPoints
           this.user = data.result;
+          // Сброс сообщения о загрузке аватара при успешной загрузке данных
           this.avatarUploadMessage = '';
         }
       } catch (err) {
         console.error('Ошибка при получении профиля', err);
-        this.errorMessage = 'Не удалось загрузить данные пользователя.';
+        this.errorMessage = `Не удалось загрузить данные пользователя: ${err.message || err}`;
       }
     }
   }
@@ -161,6 +216,7 @@ export default {
 </script>
 
 <style scoped>
+/* Стили из вашего скриншота */
 .profile-container {
   max-width: 600px;
   margin: 0 auto;
@@ -303,6 +359,20 @@ input:focus {
   font-weight: 500;
   margin-top: 8px;
   text-align: center;
+}
+
+/* Добавленный стиль для отображения штрафных очков */
+.penalty-points-display {
+  font-size: 16px;
+  color: #333;
+  margin-top: 4px; /* Adjust spacing as needed */
+  padding: 10px 12px; /* Match input padding for alignment */
+  border-radius: 8px;
+  border: 1px solid #ccc; /* Add border to visually match input fields */
+  background-color: #f9f9f9; /* Slightly different background */
+  min-height: 40px; /* Ensure minimum height like an input */
+  display: flex; /* Use flex to vertically center content */
+  align-items: center;
 }
 
 </style>
