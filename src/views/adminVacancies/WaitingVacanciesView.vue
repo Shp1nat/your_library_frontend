@@ -31,7 +31,7 @@
         </div>
         <div class="cell date-column">
           <div class="column-header sortable" @click="toggleSort('updatedAt')">
-            <span style="margin-right: 0.3rem;">Дата обновления</span>
+            <span style="margin-right: 0.3rem;">Дата создания</span>
             <span v-if="sortField === 'updatedAt'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
         </div>
@@ -74,7 +74,7 @@
           <h3>Информация об отклике</h3>
           <p><strong>ID:</strong> {{ selectedVacancy.id }}</p>
           <p><strong>Статус:</strong> {{ getStatusDisplayName(selectedVacancy.status) || 'Не указан' }}</p>
-          <p><strong>Дата обновления:</strong> {{ formatDate(selectedVacancy.updatedAt) || 'Не указана' }}</p>
+          <p><strong>Дата создания:</strong> {{ formatDate(selectedVacancy.updatedAt) || 'Не указана' }}</p>
         </div>
 
         <div class="vacancy-details-section">
@@ -393,7 +393,7 @@ export default {
 .table-row {
   display: grid;
   grid-template-columns: 40px 1fr 2fr 3fr;
-  align-items: center;
+  align-items: start;
   border-bottom: 1px solid #e5e7eb;
 }
 
