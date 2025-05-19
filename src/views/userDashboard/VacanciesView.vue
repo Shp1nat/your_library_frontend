@@ -152,7 +152,7 @@ export default {
 
       if (selectedStatusValues.length > 0 && selectedStatusValues.length < allStatuses.length) {
         selectedStatusValues.forEach(status => {
-          conditions.push({var: 'status', operator: 'contain', value: status});
+          conditions.push({var: 'status', operator: 'eq', value: status});
         });
         mainCond = 'or';
       }
@@ -340,21 +340,25 @@ export default {
 }
 
 .header-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-bottom: 1rem;
-  flex-wrap: wrap;
   gap: 1rem;
 }
 
-.title {
+.header-row .title {
+  grid-column: 2;
+  text-align: center;
   font-size: 2rem;
   font-weight: bold;
   color: #1f2937;
+  margin: 0;
 }
 
-.create-button {
+.header-row .create-button {
+  grid-column: 3;
+  justify-self: end;
   padding: 0.75rem 1.5rem;
   background-color: #3b82f6;
   color: white;
@@ -681,15 +685,21 @@ export default {
 
 @media (max-width: 768px) {
   .header-row {
+    display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0.5rem;
   }
 
-  .title {
+  .header-row .title {
+    grid-column: unset;
+    text-align: center;
     margin-bottom: 0.5rem;
   }
 
-  .create-button {
+  .header-row .create-button {
+    grid-column: unset;
+    justify-self: unset;
     width: 100%;
     text-align: center;
   }
