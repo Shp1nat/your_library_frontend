@@ -1,7 +1,7 @@
 <template>
   <div class="vacancies-container">
     <div class="header-row">
-      <h1 class="title">Мои вакансии</h1>
+      <h1 class="title">Мои отклики</h1>
       <button class="create-button" @click="openCreateModal">Создать отклик</button>
     </div>
 
