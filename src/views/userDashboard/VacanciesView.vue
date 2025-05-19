@@ -2,7 +2,7 @@
   <div class="vacancies-container">
     <div class="header-row">
       <h1 class="title">Мои вакансии</h1>
-      <button class="create-button" @click="openCreateModal">Создать вакансию</button>
+      <button class="create-button" @click="openCreateModal">Создать отклик</button>
     </div>
 
     <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
@@ -77,9 +77,9 @@
 
     <div v-if="showCreateModal" class="modal-overlay" @click.self="closeCreateModal">
       <div class="modal">
-        <h2>Создать новую вакансию</h2>
+        <h2>Создать новый отклик</h2>
         <div class="info-group">
-          <label for="vacancyText">Текст вакансии:</label>
+          <label for="vacancyText">Текст отклика:</label>
           <textarea id="vacancyText" v-model="newVacancyText" rows="6" class="modal-textarea"></textarea>
         </div>
         <button @click="createVacancy" :disabled="isCreating" class="modal-button">
