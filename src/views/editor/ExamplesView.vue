@@ -322,6 +322,7 @@ export default {
     },
     async selectExample(id) {
       this.errorMessage = '';
+      this.avatarUploadMessage = '';
       const token = localStorage.getItem('token');
       try {
         const res = await fetch('http://localhost:3000/proxy/get-example-ids-out.json', {
