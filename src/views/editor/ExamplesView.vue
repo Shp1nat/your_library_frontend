@@ -21,34 +21,69 @@
         <div class="cell checkbox-cell">
           <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
         </div>
-        <div class="cell">
-          Название книги
-          <input v-model="searchFields.exampleName" @input="loadExamples" placeholder="Поиск..." class="header-filter-input"/>
-        </div>
+        <div class="cell image-cell">Фото</div>  <div class="cell">
+        Название книги
+        <input
+            v-model="searchFields.exampleName"
+            @input="loadExamples"
+            placeholder="Поиск..."
+            class="header-filter-input"
+        />
+      </div>
         <div class="cell year-column">
           <div class="column-header sortable" @click="toggleYearSort">
             <span style="margin-right: 0.3rem;">Год</span>
             <span v-if="sortField === 'year'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
-          <div class="filter-range"> <input type="number" v-model="searchFields.year_from" @input="loadExamples" placeholder="От" />
-            <input type="number" v-model="searchFields.year_to" @input="loadExamples" placeholder="До" />
+          <div class="filter-range">
+            <input
+                type="number"
+                v-model="searchFields.year_from"
+                @input="loadExamples"
+                placeholder="От"
+            />
+            <input
+                type="number"
+                v-model="searchFields.year_to"
+                @input="loadExamples"
+                placeholder="До"
+            />
           </div>
         </div>
-        <div class="cell available-column"> <div class="column-header sortable" @click="toggleAvailableCountSort">
-          <span style="margin-right: 0.3rem;">Доступно</span>
-          <span v-if="sortField === 'availableCount'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
-        </div>
-          <div class="filter-range"> <input type="number" v-model="searchFields.availableCount_from" @input="loadExamples" placeholder="От" />
-            <input type="number" v-model="searchFields.availableCount_to" @input="loadExamples" placeholder="До" />
+        <div class="cell available-column">
+          <div class="column-header sortable" @click="toggleAvailableCountSort">
+            <span style="margin-right: 0.3rem;">Доступно</span>
+            <span v-if="sortField === 'availableCount'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+          <div class="filter-range">
+            <input
+                type="number"
+                v-model="searchFields.availableCount_from"
+                @input="loadExamples"
+                placeholder="От"
+            />
+            <input
+                type="number"
+                v-model="searchFields.availableCount_to"
+                @input="loadExamples"
+                placeholder="До"
+            />
           </div>
         </div>
         <div class="cell">
           Издательство
-          <input v-model="searchFields.publisherName" @input="loadExamples" placeholder="Поиск..." class="header-filter-input"/>
+          <input
+              v-model="searchFields.publisherName"
+              @input="loadExamples"
+              placeholder="Поиск..."
+              class="header-filter-input"
+          />
         </div>
         <div class="cell sortable" @click="toggleUpdatedAtSort">
           Последнее изменение
-          <span v-if="sortField === 'updatedAt'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          <span v-if="sortField === 'updatedAt'" style="margin-left: 0.3rem;">{{
+              sortDir === 'asc' ? '↑' : '↓'
+            }}</span>
         </div>
       </div>
 
@@ -61,6 +96,12 @@
         <div class="cell checkbox-cell" @click.stop>
           <input type="checkbox" :value="example.id" v-model="selectedIds" />
         </div>
+        <div class="cell image-cell">  <img
+            :src="example.picture ? 'data:image/jpeg;base64,' + example.picture : defaultExampleAvatar"
+            alt="Обложка экземпляра"
+            class="example-image"
+        />
+        </div>
         <div class="cell">{{ example.book?.name }}</div>
         <div class="cell">{{ example.year }}</div>
         <div class="cell">{{ example.availableCount }}</div>
@@ -71,6 +112,29 @@
 
     <div v-if="selectedExample" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
+        <div class="avatar-wrapper">
+          <img
+              :src="selectedExample.picture ? 'data:image/jpeg;base64,' + selectedExample.picture : defaultExampleAvatar"
+              alt="Обложка экземпляра"
+              class="avatar-preview"
+          />
+          <label class="upload-avatar-button">
+            Загрузить фото
+            <input type="file" @change="onAvatarChange" hidden />
+          </label>
+          <button
+              v-if="selectedExample.picture"
+              type="button"
+              class="delete-avatar-button"
+              @click="removeAvatar"
+          >
+            Удалить фото
+          </button>
+          <p v-if="avatarUploadMessage" class="avatar-upload-message">
+            {{ avatarUploadMessage }}
+          </p>
+        </div>
+
         <h2>{{ isCreatingNew ? 'Добавление экземпляра' : 'Редактирование экземпляра' }}</h2>
         <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
 
@@ -105,7 +169,11 @@
 
         <div class="form-group">
           <label>Издательство:</label>
-          <input v-model="publisherSearch" @input="searchPublishers" placeholder="Поиск издательства..." />
+          <input
+              v-model="publisherSearch"
+              @input="searchPublishers"
+              placeholder="Поиск издательства..."
+          />
           <div class="single-select">
             <div
                 v-for="publisher in availablePublishers"
@@ -129,6 +197,7 @@
 </template>
 
 <script>
+import defaultExampleAvatar from '@/assets/defaultExampleAvatar.jpg';
 export default {
   data() {
     return {
@@ -152,7 +221,11 @@ export default {
       availablePublishers: [],
 
       bookSearch: '',
-      publisherSearch: ''
+      publisherSearch: '',
+
+      defaultExampleAvatar,
+      avatarChanged: false,
+      avatarUploadMessage: '',
     };
   },
   computed: {
@@ -167,6 +240,26 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return '';
       return new Date(dateStr).toLocaleString();
+    },
+    onAvatarChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.selectedExample.avatarFile = file;
+        this.avatarChanged = true;
+        this.avatarUploadMessage = 'Изображение загружено ✅';
+        const reader = new FileReader();
+        reader.onload = e => {
+          // reader.result = "data:image/…;base64,AAAA…"
+          this.selectedExample.picture = e.target.result.split(',')[1];
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    removeAvatar() {
+      this.selectedExample.picture = null;
+      this.selectedExample.avatarFile = null;
+      this.avatarChanged = true;
+      this.avatarUploadMessage = 'Изображение удалено ❌';
     },
     async loadExamples() {
       this.errorMessage = '';
@@ -274,6 +367,7 @@ export default {
     },
     async selectExample(id) {
       this.errorMessage = '';
+      this.avatarUploadMessage = '';
       const token = localStorage.getItem('token');
       try {
         const res = await fetch('http://localhost:3000/proxy/get-example-ids-out.json', {
@@ -333,16 +427,31 @@ export default {
     async saveExample() {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
-      const exampleToSend = {...this.selectedExample};
+      if (!token) {
+        this.errorMessage = 'Ошибка: токен отсутствует';
+        return;
+      }
 
+      // вместо JSON — FormData
+      const formData = new FormData();
+      // отправляем остальные поля экземпляра в виде JSON
+      formData.append('example', JSON.stringify({
+          id: this.selectedExample.id,
+          description: this.selectedExample.description,
+          year: this.selectedExample.year,
+          availableCount: this.selectedExample.availableCount,
+          book: this.selectedExample.book,
+          publisher: this.selectedExample.publisher
+      }));
+      formData.append('avatarChanged', JSON.stringify(this.avatarChanged));
+      if (this.avatarChanged && this.selectedExample.avatarFile) {
+        formData.append('avatar', this.selectedExample.avatarFile);
+      }
       try {
         const response = await fetch('http://localhost:3000/proxy/set-example.json', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({example: exampleToSend})
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
         });
 
         const responseJson = await response.json();
@@ -351,6 +460,7 @@ export default {
         } else {
           await this.loadExamples();
           this.closeModal();
+          this.avatarChanged = false;
         }
       } catch (err) {
         console.error('Ошибка при сохранении экземпляра:', err);
@@ -603,9 +713,23 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  grid-template-columns: 40px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
+  grid-template-columns: 40px 80px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
+}
+
+.image-cell {
+  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.example-image {
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 4px;
+  object-fit: contain;
 }
 
 .table-header {
@@ -702,6 +826,8 @@ export default {
   width: 450px;
   max-width: 90%;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .modal h2 {
@@ -757,6 +883,39 @@ select {
   max-height: 150px;
   overflow-y: auto;
   background-color: #fff;
+}
+
+.avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.avatar-preview { max-width:150px; border:2px solid #1e3a8a; border-radius:10px; }
+
+.upload-avatar-button,
+.delete-avatar-button {
+  background-color: transparent;
+  color: #1e3a8a;
+  border: 1px solid #1e3a8a;
+  padding: 8px 14px;
+  margin: 8px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.avatar-upload-message {
+  color: #1e3a8a;
+  background-color: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+  text-align: center;
 }
 
 .cell.sortable {
