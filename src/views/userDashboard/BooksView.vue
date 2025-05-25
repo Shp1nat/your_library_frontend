@@ -22,15 +22,22 @@
     <div class="table-container">
       <div class="table-header">
         <div class="cell checkbox-cell">
-          <input type="checkbox"
-                 :checked="allSelected"
-                 @change="toggleSelectAll"
-                 :disabled="availableExamples.length === 0"
+          <input
+              type="checkbox"
+              :checked="allSelected"
+              @change="toggleSelectAll"
+              :disabled="availableExamples.length === 0"
           />
         </div>
+        <div class="cell image-cell">Фото</div>
         <div class="cell">
           Название книги
-          <input v-model="searchFields.exampleName" @input="loadExamples" placeholder="Поиск..." class="header-filter-input"/>
+          <input
+              v-model="searchFields.exampleName"
+              @input="loadExamples"
+              placeholder="Поиск..."
+              class="header-filter-input"
+          />
         </div>
         <div class="cell year-column">
           <div class="column-header sortable" @click="toggleYearSort">
@@ -38,8 +45,18 @@
             <span v-if="sortField === 'year'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
           <div class="filter-range">
-            <input type="number" v-model="searchFields.year_from" @input="loadExamples" placeholder="От" />
-            <input type="number" v-model="searchFields.year_to" @input="loadExamples" placeholder="До" />
+            <input
+                type="number"
+                v-model="searchFields.year_from"
+                @input="loadExamples"
+                placeholder="От"
+            />
+            <input
+                type="number"
+                v-model="searchFields.year_to"
+                @input="loadExamples"
+                placeholder="До"
+            />
           </div>
         </div>
         <div class="cell available-column">
@@ -48,17 +65,34 @@
             <span v-if="sortField === 'availableCount'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
           <div class="filter-range">
-            <input type="number" v-model="searchFields.availableCount_from" @input="loadExamples" placeholder="От" />
-            <input type="number" v-model="searchFields.availableCount_to" @input="loadExamples" placeholder="До" />
+            <input
+                type="number"
+                v-model="searchFields.availableCount_from"
+                @input="loadExamples"
+                placeholder="От"
+            />
+            <input
+                type="number"
+                v-model="searchFields.availableCount_to"
+                @input="loadExamples"
+                placeholder="До"
+            />
           </div>
         </div>
         <div class="cell">
           Издательство
-          <input v-model="searchFields.publisherName" @input="loadExamples" placeholder="Поиск..." class="header-filter-input"/>
+          <input
+              v-model="searchFields.publisherName"
+              @input="loadExamples"
+              placeholder="Поиск..."
+              class="header-filter-input"
+          />
         </div>
         <div class="cell sortable" @click="toggleUpdatedAtSort">
           Последнее изменение
-          <span v-if="sortField === 'updatedAt'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          <span v-if="sortField === 'updatedAt'" style="margin-left: 0.3rem;">{{
+              sortDir === 'asc' ? '↑' : '↓'
+            }}</span>
         </div>
       </div>
 
@@ -66,13 +100,22 @@
           v-for="example in examples"
           :key="example.id"
           class="table-row"
-          :class="{'row-disabled': example.availableCount === 0}"
-          @click="viewExampleDetails(example.id)" >
+          :class="{ 'row-disabled': example.availableCount === 0 }"
+          @click="viewExampleDetails(example.id)"
+      >
         <div class="cell checkbox-cell" @click.stop>
-          <input type="checkbox"
-                 :value="example.id"
-                 v-model="selectedIds"
-                 :disabled="example.availableCount === 0"
+          <input
+              type="checkbox"
+              :value="example.id"
+              v-model="selectedIds"
+              :disabled="example.availableCount === 0"
+          />
+        </div>
+        <div class="cell image-cell">
+          <img
+              :src="example.picture ? 'data:image/jpeg;base64,' + example.picture : defaultExampleAvatar"
+              alt="Обложка экземпляра"
+              class="example-image"
           />
         </div>
         <div class="cell">{{ example.book?.name }}</div>
@@ -85,12 +128,18 @@
       <div v-if="!examples.length && !errorMessage" class="empty-table-message">
         Загрузка данных или нет экземпляров по заданным фильтрам.
       </div>
-
     </div>
 
     <div v-if="selectedExample" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <h2>Информация о экземпляре</h2>
+        <div class="modal-image-wrapper">
+          <img
+              :src="selectedExample.picture ? 'data:image/jpeg;base64,' + selectedExample.picture : defaultExampleAvatar"
+              alt="Обложка экземпляра"
+              class="modal-example-image"
+          />
+        </div>
         <div class="info-group">
           <label>Название книги:</label>
           <p>{{ selectedExample.book?.name || 'Не указано' }}</p>
@@ -115,12 +164,15 @@
           <label>Последнее изменение:</label>
           <p>{{ formatDate(selectedExample.updatedAt) || 'Нет данных' }}</p>
         </div>
+        <button class="btn close-modal-button" @click="closeModal">Закрыть</button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import defaultExampleAvatar from '@/assets/defaultExampleAvatar.jpg';
+
 export default {
   data() {
     return {
@@ -139,6 +191,7 @@ export default {
       },
       errorMessage: '',
       isOrdering: false, // Флаг для состояния оформления заказа
+      defaultExampleAvatar,
     };
   },
   computed: {
@@ -152,7 +205,7 @@ export default {
       return this.availableExamples.length > 0 &&
           this.selectedIds.length === this.availableExamples.length &&
           this.selectedIds.every(id => this.availableExamples.some(ex => ex.id === id));
-    }
+    },
   },
   async mounted() {
     // Загрузка данных при монтировании компонента
@@ -165,7 +218,7 @@ export default {
       try {
         return new Date(dateStr).toLocaleString();
       } catch (e) {
-        console.error("Invalid date string:", dateStr, e);
+        console.error('Invalid date string:', dateStr, e);
         return 'Некорректная дата';
       }
     },
@@ -183,44 +236,39 @@ export default {
 
       // Формирование условий для запроса на основе полей поиска
       if (this.searchFields.exampleName) {
-        conditions.push({var: 'name', operator: 'contain', value: this.searchFields.exampleName});
+        conditions.push({ var: 'name', operator: 'contain', value: this.searchFields.exampleName });
       }
       if (this.searchFields.year_from !== '' && this.searchFields.year_from !== null) {
         const yearFrom = parseInt(this.searchFields.year_from, 10);
-        if (!isNaN(yearFrom)) conditions.push({var: 'year', operator: 'greater_or_equal', value: yearFrom});
+        if (!isNaN(yearFrom)) conditions.push({ var: 'year', operator: 'greater_or_equal', value: yearFrom });
       }
       if (this.searchFields.year_to !== '' && this.searchFields.year_to !== null) {
         const yearTo = parseInt(this.searchFields.year_to, 10);
-        if (!isNaN(yearTo)) conditions.push({var: 'year', operator: 'less_or_equal', value: yearTo});
+        if (!isNaN(yearTo)) conditions.push({ var: 'year', operator: 'less_or_equal', value: yearTo });
       }
       if (this.searchFields.availableCount_from !== '' && this.searchFields.availableCount_from !== null) {
         const countFrom = parseInt(this.searchFields.availableCount_from, 10);
-        if (!isNaN(countFrom)) conditions.push({
-          var: 'availableCount',
-          operator: 'greater_or_equal',
-          value: countFrom
-        });
+        if (!isNaN(countFrom)) {
+          conditions.push({ var: 'availableCount', operator: 'greater_or_equal', value: countFrom });
+        }
       }
       if (this.searchFields.availableCount_to !== '' && this.searchFields.availableCount_to !== null) {
         const countTo = parseInt(this.searchFields.availableCount_to, 10);
-        if (!isNaN(countTo)) conditions.push({
-          var: 'availableCount',
-          operator: 'less_or_equal',
-          value: countTo
-        });
+        if (!isNaN(countTo)) {
+          conditions.push({ var: 'availableCount', operator: 'less_or_equal', value: countTo });
+        }
       }
       // Обработка фильтра по названию книги (в оригинале было exampleName, но фильтруем по book.name)
       // Предполагаем, что API `get-example-ids.json` поддерживает фильтрацию по связанным полям через 'name' для 'book'.
       // Если нет, нужно будет изменить логику фильтрации.
       // Исходя из примера, `exampleName` используется для фильтрации по названию книги.
       if (this.searchFields.exampleName) {
-        conditions.push({var: 'book.name', operator: 'contain', value: this.searchFields.exampleName});
+        conditions.push({ var: 'book.name', operator: 'contain', value: this.searchFields.exampleName });
       }
       // Фильтрация по издательству (publisher.name)
       if (this.searchFields.publisherName) {
-        conditions.push({var: 'publisher.name', operator: 'contain', value: this.searchFields.publisherName});
+        conditions.push({ var: 'publisher.name', operator: 'contain', value: this.searchFields.publisherName });
       }
-
 
       try {
         // Шаг 1: Получение ID экземпляров по условиям
@@ -228,15 +276,15 @@ export default {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
             conditions,
             main_cond: 'and', // Используем 'and' для комбинирования фильтров
             search: '', // Пустой общий поиск, т.к. используем пополевые фильтры
             sort_col: this.sortField,
-            sort_dir: this.sortDir
-          })
+            sort_dir: this.sortDir,
+          }),
         });
 
         const idResponseJson = await idResponse.json();
@@ -260,10 +308,10 @@ export default {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
           },
           // Отправляем только result из первого запроса, как в оригинале
-          body: JSON.stringify(idResponseJson.result)
+          body: JSON.stringify(idResponseJson.result),
         });
 
         const examplesData = await examplesRes.json();
@@ -328,20 +376,16 @@ export default {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
           },
-          // Передаем структуру для получения одного экземпляра по ID
-          body: JSON.stringify({example: {id}})
+          body: JSON.stringify({ example: { id } }),
         });
 
         const data = await res.json();
         if (data.error) {
           this.errorMessage = data.error;
-          this.selectedExample = null; // Убедимся, что модальное окно не откроется или закроется
         } else if (data.result?.example) {
-          // Если данные получены, сохраняем их для отображения в модальном окне
           this.selectedExample = data.result.example;
-          // Нет логики для редактирования или выбора связанных сущностей
         } else {
           this.errorMessage = 'Детали экземпляра не найдены.';
           this.selectedExample = null;
@@ -385,10 +429,10 @@ export default {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
           },
           // В теле запроса отправляем массив выбранных ID
-          body: JSON.stringify({ exampleIds: this.selectedIds })
+          body: JSON.stringify({ exampleIds: this.selectedIds }),
         });
 
         const responseJson = await response.json();
@@ -411,13 +455,13 @@ export default {
       } finally {
         this.isOrdering = false; // Снимаем флаг независимо от результата
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style scoped>
-/* Используем тот же базовый стиль, что и в редакторе */
+/* Используем тот же базовый стиль, что и в редакторе, с дополнениями для фото */
 .order-container {
   padding: 2rem;
   font-family: sans-serif; /* Убедимся, что используется стандартный шрифт */
@@ -439,7 +483,6 @@ export default {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
 
 .header-row {
   display: flex;
@@ -492,7 +535,6 @@ export default {
   transform: none !important; /* Отключаем анимацию при отключенной кнопке */
 }
 
-
 .table-container {
   border: 1px solid #d1d5db; /* Серый бордер */
   border-radius: 8px;
@@ -504,8 +546,8 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  /* Сетка колонок: чекбокс (фиксир), книга (2 части), год (1.5), доступно (1.5), издательство (1.5), изменение (1.5) */
-  grid-template-columns: 40px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
+  /* Сетка колонок: чекбокс (фиксир), фото (80px), книга (2 части), год (1.5), доступно (1.5), издательство (1.5), изменение (1.5) */
+  grid-template-columns: 40px 80px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
   align-items: start; /* Выравнивание по верху, чтобы фильтры не растягивали ячейку */
   border-bottom: 1px solid #e5e7eb; /* Светло-серый разделитель строк */
 }
@@ -553,7 +595,6 @@ export default {
   justify-content: flex-start;
 }
 
-
 .cell.checkbox-cell {
   padding-top: 0.9rem; /* Выравнивание чекбокса по центру с текстом */
   align-items: center;
@@ -577,7 +618,6 @@ export default {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); /* Легкая тень при фокусе */
 }
 
-
 .year-column,
 .available-column {
   display: flex;
@@ -592,7 +632,8 @@ export default {
   margin-bottom: 0.25rem;
 }
 
-.cell > .sortable, .column-header.sortable {
+.cell > .sortable,
+.column-header.sortable {
   cursor: pointer;
   user-select: none;
 }
@@ -621,6 +662,20 @@ export default {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
+/* Стили для ячейки с изображением в таблице */
+.image-cell {
+  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.example-image {
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 4px;
+  object-fit: contain; /* Предотвращает искажение пропорций */
+}
 
 /* Стили модального окна для просмотра */
 .modal-overlay {
@@ -655,12 +710,27 @@ export default {
   to { transform: scale(1); opacity: 1; }
 }
 
-
 .modal h2 {
   text-align: center;
   font-size: 1.6rem; /* Немного крупнее заголовок */
   margin-bottom: 1.8rem; /* Больше отступ снизу */
   color: #1f2937;
+}
+
+/* Стиль для обертки изображения в модальном окне */
+.modal-image-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-example-image {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 8px;
+  object-fit: contain;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
 }
 
 /* Стиль для групп информации в модалке */
@@ -687,6 +757,19 @@ export default {
   white-space: pre-wrap; /* Сохранить переносы строк в описании */
 }
 
+/* Стиль для кнопки закрытия модального окна */
+.btn.close-modal-button {
+  background-color: #6b7280; /* Серый фон */
+  color: white;
+  border-color: #6b7280;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.btn.close-modal-button:hover {
+  background-color: #4a5568; /* Более темный серый при наведении */
+  border-color: #4a5568;
+}
 
 /* Стили для верхней панели с кнопкой */
 .top-bar {
@@ -711,8 +794,13 @@ export default {
 @media (max-width: 768px) {
   .table-header,
   .table-row {
-    grid-template-columns: 40px 1.5fr 1fr 1fr 1fr 1.5fr; /* Скорректировать ширину колонок */
+    grid-template-columns: 40px 60px 1.5fr 1fr 1fr 1fr 1.5fr; /* Скорректировать ширину колонок */
     font-size: 0.9rem; /* Уменьшить шрифт */
+  }
+
+  .example-image {
+    max-width: 40px;
+    max-height: 40px;
   }
 
   .cell {
@@ -743,12 +831,18 @@ export default {
     margin-bottom: 1rem;
   }
 
+  .modal-example-image {
+    max-width: 100px;
+    max-height: 100px;
+  }
+
   .info-group {
     margin-bottom: 1rem;
   }
 
   .info-group p {
     padding: 0.5rem;
+    font-size: 0.9rem;
   }
 }
 
