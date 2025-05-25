@@ -21,34 +21,69 @@
         <div class="cell checkbox-cell">
           <input type="checkbox" :checked="allSelected" @change="toggleSelectAll" />
         </div>
-        <div class="cell">
-          Название книги
-          <input v-model="searchFields.exampleName" @input="loadExamples" placeholder="Поиск..." class="header-filter-input"/>
-        </div>
+        <div class="cell image-cell">Фото</div>  <div class="cell">
+        Название книги
+        <input
+            v-model="searchFields.exampleName"
+            @input="loadExamples"
+            placeholder="Поиск..."
+            class="header-filter-input"
+        />
+      </div>
         <div class="cell year-column">
           <div class="column-header sortable" @click="toggleYearSort">
             <span style="margin-right: 0.3rem;">Год</span>
             <span v-if="sortField === 'year'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
           </div>
-          <div class="filter-range"> <input type="number" v-model="searchFields.year_from" @input="loadExamples" placeholder="От" />
-            <input type="number" v-model="searchFields.year_to" @input="loadExamples" placeholder="До" />
+          <div class="filter-range">
+            <input
+                type="number"
+                v-model="searchFields.year_from"
+                @input="loadExamples"
+                placeholder="От"
+            />
+            <input
+                type="number"
+                v-model="searchFields.year_to"
+                @input="loadExamples"
+                placeholder="До"
+            />
           </div>
         </div>
-        <div class="cell available-column"> <div class="column-header sortable" @click="toggleAvailableCountSort">
-          <span style="margin-right: 0.3rem;">Доступно</span>
-          <span v-if="sortField === 'availableCount'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
-        </div>
-          <div class="filter-range"> <input type="number" v-model="searchFields.availableCount_from" @input="loadExamples" placeholder="От" />
-            <input type="number" v-model="searchFields.availableCount_to" @input="loadExamples" placeholder="До" />
+        <div class="cell available-column">
+          <div class="column-header sortable" @click="toggleAvailableCountSort">
+            <span style="margin-right: 0.3rem;">Доступно</span>
+            <span v-if="sortField === 'availableCount'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+          <div class="filter-range">
+            <input
+                type="number"
+                v-model="searchFields.availableCount_from"
+                @input="loadExamples"
+                placeholder="От"
+            />
+            <input
+                type="number"
+                v-model="searchFields.availableCount_to"
+                @input="loadExamples"
+                placeholder="До"
+            />
           </div>
         </div>
         <div class="cell">
           Издательство
-          <input v-model="searchFields.publisherName" @input="loadExamples" placeholder="Поиск..." class="header-filter-input"/>
+          <input
+              v-model="searchFields.publisherName"
+              @input="loadExamples"
+              placeholder="Поиск..."
+              class="header-filter-input"
+          />
         </div>
         <div class="cell sortable" @click="toggleUpdatedAtSort">
           Последнее изменение
-          <span v-if="sortField === 'updatedAt'" style="margin-left: 0.3rem;">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          <span v-if="sortField === 'updatedAt'" style="margin-left: 0.3rem;">{{
+              sortDir === 'asc' ? '↑' : '↓'
+            }}</span>
         </div>
       </div>
 
@@ -60,6 +95,12 @@
       >
         <div class="cell checkbox-cell" @click.stop>
           <input type="checkbox" :value="example.id" v-model="selectedIds" />
+        </div>
+        <div class="cell image-cell">  <img
+            :src="example.picture ? 'data:image/jpeg;base64,' + example.picture : defaultExampleAvatar"
+            alt="Обложка экземпляра"
+            class="example-image"
+        />
         </div>
         <div class="cell">{{ example.book?.name }}</div>
         <div class="cell">{{ example.year }}</div>
@@ -128,7 +169,11 @@
 
         <div class="form-group">
           <label>Издательство:</label>
-          <input v-model="publisherSearch" @input="searchPublishers" placeholder="Поиск издательства..." />
+          <input
+              v-model="publisherSearch"
+              @input="searchPublishers"
+              placeholder="Поиск издательства..."
+          />
           <div class="single-select">
             <div
                 v-for="publisher in availablePublishers"
@@ -668,9 +713,23 @@ export default {
 .table-header,
 .table-row {
   display: grid;
-  grid-template-columns: 40px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
+  grid-template-columns: 40px 80px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
   align-items: center;
   border-bottom: 1px solid #d1d5db;
+}
+
+.image-cell {
+  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.example-image {
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 4px;
+  object-fit: contain;
 }
 
 .table-header {
