@@ -9,6 +9,7 @@ import VacanciesLayout from '@/layouts/VacanciesLayout.vue'
 import EditorPage from '@/views/adminDashboard/EditorView.vue'
 import OrderAdminPage from '@/views/adminDashboard/OrderView.vue'
 import VacancyAdminPage from '@/views/adminDashboard/VacanciesView.vue'
+import RecommendationsUserPage from '@/views/userDashboard/RecommendationsView.vue'
 
 import AuthorsView from '@/views/editor/AuthorsView.vue'
 import GenresView from '@/views/editor/GenresView.vue'
@@ -51,6 +52,8 @@ const routes = [
       { path: 'orders/booked', component: BookedOrdersView },
       { path: 'orders/active', component: ActiveOrdersView },
       { path: 'orders/closed-rejected', component: ClosedAndRejectedOrdersView },
+
+      { path: 'recommendations', component: RecommendationsUserPage },
 
       { path: 'vacancies', component: VacancyAdminPage },
       { path: 'vacancies/waiting', component: waitingVacanciesView },
