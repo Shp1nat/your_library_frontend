@@ -1,7 +1,31 @@
 <template>
-  <div class="order-container">
+  <div class="recommendations-container">
     <div class="header-row">
-      <h1 class="title">Оформление заказа</h1>
+      <h1 class="title">Рекомендованные книги</h1>
+    </div>
+
+    <div class="recommendation-type-selector">
+      <span class="selector-label">Показывать рекомендации по:</span>
+      <div class="button-group">
+        <button
+            :class="['btn-recs-type', { active: recsType === 'genres' }]"
+            @click="changeRecsType('genres')"
+        >
+          Жанрам
+        </button>
+        <button
+            :class="['btn-recs-type', { active: recsType === 'types' }]"
+            @click="changeRecsType('types')"
+        >
+          Типу
+        </button>
+        <button
+            :class="['btn-recs-type', { active: recsType === 'authors' }]"
+            @click="changeRecsType('authors')"
+        >
+          Авторам
+        </button>
+      </div>
     </div>
 
     <div class="top-bar">
@@ -34,7 +58,7 @@
           Название книги
           <input
               v-model="searchFields.exampleName"
-              @input="loadExamples"
+              @input="loadRecommendedExamples"
               placeholder="Поиск..."
               class="header-filter-input"
           />
@@ -48,13 +72,13 @@
             <input
                 type="number"
                 v-model="searchFields.year_from"
-                @input="loadExamples"
+                @input="loadRecommendedExamples"
                 placeholder="От"
             />
             <input
                 type="number"
                 v-model="searchFields.year_to"
-                @input="loadExamples"
+                @input="loadRecommendedExamples"
                 placeholder="До"
             />
           </div>
@@ -68,13 +92,13 @@
             <input
                 type="number"
                 v-model="searchFields.availableCount_from"
-                @input="loadExamples"
+                @input="loadRecommendedExamples"
                 placeholder="От"
             />
             <input
                 type="number"
                 v-model="searchFields.availableCount_to"
-                @input="loadExamples"
+                @input="loadRecommendedExamples"
                 placeholder="До"
             />
           </div>
@@ -83,7 +107,7 @@
           Издательство
           <input
               v-model="searchFields.publisherName"
-              @input="loadExamples"
+              @input="loadRecommendedExamples"
               placeholder="Поиск..."
               class="header-filter-input"
           />
@@ -126,7 +150,7 @@
       </div>
 
       <div v-if="!examples.length && !errorMessage" class="empty-table-message">
-        Загрузка данных или нет экземпляров по заданным фильтрам.
+        Загрузка рекомендаций или нет книг по заданным фильтрам и типу рекомендаций.
       </div>
     </div>
 
@@ -198,17 +222,18 @@
 </template>
 
 <script>
-import defaultExampleAvatar from '@/assets/defaultExampleAvatar.jpg';
+import defaultExampleAvatar from '@/assets/defaultExampleAvatar.jpg'; // Убедитесь, что путь корректен
 
 export default {
+  name: 'RecommendedBooksPage',
   data() {
     return {
       examples: [],
-      selectedExample: null, // Используется для отображения в модальном окне
+      selectedExample: null,
       sortDir: 'desc',
       sortField: 'updatedAt',
-      selectedIds: [], // Массив ID выбранных чекбоксами экземпляров
-      searchFields: { // Поля для фильтрации
+      selectedIds: [],
+      searchFields: {
         exampleName: '',
         year_from: '',
         year_to: '',
@@ -217,29 +242,25 @@ export default {
         publisherName: ''
       },
       errorMessage: '',
-      isOrdering: false, // Флаг для состояния оформления заказа
+      isOrdering: false,
       defaultExampleAvatar,
+      recsType: 'genres', // Тип рекомендаций по умолчанию
     };
   },
   computed: {
-    // Получаем только доступные экземпляры
     availableExamples() {
       return this.examples.filter(example => example.availableCount > 0);
     },
     allSelected() {
-      // Проверяем, выбраны ли все *доступные* экземпляры
-      // И также убеждаемся, что выбранных ID больше 0, чтобы избежать ложного "все выбраны" при пустом списке
       return this.availableExamples.length > 0 &&
           this.selectedIds.length === this.availableExamples.length &&
           this.selectedIds.every(id => this.availableExamples.some(ex => ex.id === id));
     },
   },
   async mounted() {
-    // Загрузка данных при монтировании компонента
-    await this.loadExamples();
+    await this.loadRecommendedExamples();
   },
   methods: {
-    // Метод для форматирования даты, остается без изменений
     formatDate(dateStr) {
       if (!dateStr) return '';
       try {
@@ -249,8 +270,15 @@ export default {
         return 'Некорректная дата';
       }
     },
-    // Метод для загрузки экземпляров с учетом фильтров и сортировки
-    async loadExamples() {
+
+    changeRecsType(newType) {
+      if (this.recsType !== newType) {
+        this.recsType = newType;
+        this.loadRecommendedExamples();
+      }
+    },
+
+    async loadRecommendedExamples() {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
       if (!token) {
@@ -261,7 +289,9 @@ export default {
 
       const conditions = [];
 
-      // Формирование условий для запроса на основе полей поиска
+      // Добавляем условие типа рекомендаций
+      conditions.push({ var: 'recsType', operator: 'equal', value: this.recsType });
+
       if (this.searchFields.exampleName) {
         conditions.push({ var: 'name', operator: 'contain', value: this.searchFields.exampleName });
       }
@@ -285,20 +315,11 @@ export default {
           conditions.push({ var: 'availableCount', operator: 'less_or_equal', value: countTo });
         }
       }
-      // Обработка фильтра по названию книги (в оригинале было exampleName, но фильтруем по book.name)
-      // Предполагаем, что API `get-example-ids.json` поддерживает фильтрацию по связанным полям через 'name' для 'book'.
-      // Если нет, нужно будет изменить логику фильтрации.
-      // Исходя из примера, `exampleName` используется для фильтрации по названию книги.
-      if (this.searchFields.exampleName) {
-        conditions.push({ var: 'book.name', operator: 'contain', value: this.searchFields.exampleName });
-      }
-      // Фильтрация по издательству (publisher.name)
       if (this.searchFields.publisherName) {
-        conditions.push({ var: 'publisher.name', operator: 'contain', value: this.searchFields.publisherName });
+        conditions.push({ var: 'publisherName', operator: 'contain', value: this.searchFields.publisherName });
       }
 
       try {
-        // Шаг 1: Получение ID экземпляров по условиям
         const idResponse = await fetch('http://localhost:3000/proxy/get-example-ids.json', {
           method: 'POST',
           headers: {
@@ -307,8 +328,8 @@ export default {
           },
           body: JSON.stringify({
             conditions,
-            main_cond: 'and', // Используем 'and' для комбинирования фильтров
-            search: '', // Пустой общий поиск, т.к. используем пополевые фильтры
+            main_cond: 'and',
+            search: '',
             sort_col: this.sortField,
             sort_dir: this.sortDir,
           }),
@@ -319,25 +340,21 @@ export default {
         if (idResponseJson.error) {
           this.errorMessage = idResponseJson.error;
           this.examples = [];
-          return; // Прерываем выполнение при ошибке
+          return;
         }
 
-        // Проверяем, есть ли ID для получения детальных данных
         if (!idResponseJson.result?.rows?.length) {
           this.examples = [];
-          // Сброс выбранных ID, оставляем только те, которых нет в новом пустом списке (т.е. ничего)
           this.selectedIds = this.selectedIds.filter(id => this.examples.some(ex => ex.id === id));
-          return; // Если ID нет, завершаем
+          return;
         }
 
-        // Шаг 2: Получение детальных данных по полученным ID
         const examplesRes = await fetch('http://localhost:3000/proxy/get-example-ids-out.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          // Отправляем только result из первого запроса, как в оригинале
           body: JSON.stringify(idResponseJson.result),
         });
 
@@ -347,21 +364,19 @@ export default {
           this.examples = [];
         } else {
           this.examples = examplesData.result.rows || [];
-          // Сброс выбранных ID, оставляем только те, которые есть в новом списке
           this.selectedIds = this.selectedIds.filter(id => this.examples.some(ex => ex.id === id));
         }
       } catch (err) {
-        console.error('Ошибка при загрузке экземпляров:', err);
+        console.error('Ошибка при загрузке рекомендуемых экземпляров:', err);
         this.errorMessage = 'Ошибка подключения к серверу или получения данных';
         this.examples = [];
       } finally {
-        // После загрузки данных, убедимся, что выбранные ID соответствуют доступным
         this.selectedIds = this.selectedIds.filter(id =>
             this.examples.some(ex => ex.id === id && ex.availableCount > 0)
         );
       }
     },
-    // Методы сортировки, остаются без изменений
+
     toggleYearSort() {
       if (this.sortField === 'year') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -369,8 +384,9 @@ export default {
         this.sortField = 'year';
         this.sortDir = 'asc';
       }
-      this.loadExamples();
+      this.loadRecommendedExamples();
     },
+
     toggleAvailableCountSort() {
       if (this.sortField === 'availableCount') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -378,19 +394,20 @@ export default {
         this.sortField = 'availableCount';
         this.sortDir = 'asc';
       }
-      this.loadExamples();
+      this.loadRecommendedExamples();
     },
+
     toggleUpdatedAtSort() {
       if (this.sortField === 'updatedAt') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortField = 'updatedAt';
-        this.sortDir = 'desc'; // Дефолтная сортировка по дате изменения чаще всего убывающая
+        this.sortDir = 'desc';
       }
-      this.loadExamples();
+      this.loadRecommendedExamples();
     },
-    // Метод для просмотра деталей (открывает модальное окно)
-    async viewExampleDetails(id) { // Переименован из selectExample
+
+    async viewExampleDetails(id) {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
       if (!token) {
@@ -398,14 +415,14 @@ export default {
         return;
       }
       try {
-        // Запрос на получение данных конкретного экземпляра
+        // Используем новый endpoint для получения деталей, предполагая, что он поддерживает такой же формат запроса для одного элемента
         const res = await fetch('http://localhost:3000/proxy/get-example-ids-out.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ example: { id } }),
+          body: JSON.stringify({ example: { id } }), // Предполагаем, что API поддерживает это
         });
 
         const data = await res.json();
@@ -414,8 +431,12 @@ export default {
         } else if (data.result?.example) {
           this.selectedExample = data.result.example;
         } else {
-          this.errorMessage = 'Детали экземпляра не найдены.';
-          this.selectedExample = null;
+          // Возможно, если API возвращает массив при запросе по ID, нужна другая логика
+          // Например, если data.result.rows && data.result.rows.find(e => e.id === id)
+          this.selectedExample = (data.result?.rows && data.result.rows.find(e => e.id === id)) || null;
+          if (!this.selectedExample) {
+            this.errorMessage = 'Детали экземпляра не найдены.';
+          }
         }
       } catch (err) {
         console.error('Ошибка при получении деталей экземпляра:', err);
@@ -423,27 +444,26 @@ export default {
         this.selectedExample = null;
       }
     },
-    // Метод для закрытия модального окна
+
     closeModal() {
       this.selectedExample = null;
     },
-    // Метод для выбора/снятия выбора всех чекбоксов (только для доступных)
+
     toggleSelectAll(event) {
       if (event.target.checked) {
-        // Выбираем ID только тех экземпляров, у которых availableCount > 0
         this.selectedIds = this.availableExamples.map(example => example.id);
       } else {
         this.selectedIds = [];
       }
     },
-    // Новый метод для оформления заказа
+
     async placeOrder() {
       if (!this.selectedIds.length || this.isOrdering) {
-        return; // Не делаем ничего, если ничего не выбрано или уже идет процесс
+        return;
       }
 
       this.errorMessage = '';
-      this.isOrdering = true; // Устанавливаем флаг, чтобы отключить кнопку
+      this.isOrdering = true;
       const token = localStorage.getItem('token');
       if (!token) {
         this.errorMessage = 'Пользователь не авторизован.';
@@ -452,6 +472,7 @@ export default {
       }
 
       try {
+        // Endpoint для заказа остается прежним, т.к. это общая операция
         const response = await fetch('http://localhost:3000/proxy/make-order.json', {
           method: 'POST',
           headers: {
@@ -466,20 +487,16 @@ export default {
         if (responseJson.error) {
           this.errorMessage = responseJson.error;
         } else {
-          // Заказ успешно оформлен
           console.log('Заказ успешно оформлен:', responseJson.result);
-          // Очищаем выбранные ID
           this.selectedIds = [];
-          // Обновляем список экземпляров
-          await this.loadExamples();
-          // Можно добавить сообщение об успехе, если нужно
-          // alert('Заказ успешно оформлен!');
+          await this.loadRecommendedExamples(); // Обновляем список рекомендованных книг
+          // alert('Заказ успешно оформлен!'); // Можно раскомментировать для уведомления
         }
       } catch (err) {
         console.error('Ошибка при оформлении заказа:', err);
         this.errorMessage = 'Ошибка подключения к серверу при оформлении заказа.';
       } finally {
-        this.isOrdering = false; // Снимаем флаг независимо от результата
+        this.isOrdering = false;
       }
     },
   },
@@ -487,10 +504,10 @@ export default {
 </script>
 
 <style scoped>
-/* Используем тот же базовый стиль, что и в редакторе, с дополнениями для фото */
-.order-container {
+/* Базовые стили, можно скопировать из предыдущего компонента и адаптировать */
+.recommendations-container {
   padding: 2rem;
-  font-family: sans-serif; /* Убедимся, что используется стандартный шрифт */
+  font-family: sans-serif;
 }
 
 .error-message {
@@ -502,7 +519,7 @@ export default {
   margin: 10px 0;
   font-weight: bold;
   text-align: center;
-  animation: fadeIn 0.3s ease; /* Анимация появления */
+  animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -522,126 +539,177 @@ export default {
 .title {
   font-size: 2rem;
   font-weight: bold;
-  color: #1f2937; /* Темно-серый текст */
+  color: #1f2937;
 }
+
+/* Стили для селектора типа рекомендаций */
+.recommendation-type-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Центрируем блок */
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background-color: #f9fafb; /* Светлый фон для выделения блока */
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.selector-label {
+  margin-right: 1rem;
+  font-size: 1rem;
+  color: #374151; /* Темно-серый текст */
+  font-weight: 500;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem; /* Пространство между кнопками */
+  border: 1px solid #d1d5db; /* Рамка вокруг группы */
+  border-radius: 6px;
+  overflow: hidden; /* Чтобы скругление работало корректно */
+}
+
+.btn-recs-type {
+  background-color: #fff;
+  color: #374151;
+  padding: 0.6rem 1.2rem; /* Увеличенные паддинги для лучшего вида */
+  font-size: 0.9rem;
+  border: none; /* Убираем индивидуальные рамки */
+  border-right: 1px solid #d1d5db; /* Разделитель между кнопками */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-recs-type:last-child {
+  border-right: none; /* У последней кнопки нет правого разделителя */
+}
+
+.btn-recs-type:hover {
+  background-color: #f0f4f8; /* Легкое выделение при наведении */
+}
+
+.btn-recs-type.active {
+  background-color: #2563eb; /* Синий фон для активной кнопки */
+  color: white;
+  font-weight: 600;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); /* Легкая внутренняя тень */
+}
+
 
 /* Стили кнопок */
 .btn {
-  background-color: #f3f4f6; /* Светло-серый фон */
-  color: #1f2937; /* Темно-серый текст */
+  background-color: #f3f4f6;
+  color: #1f2937;
   padding: 0.5rem 1rem;
   font-size: 1rem;
   border-radius: 6px;
-  border: 1px solid #d1d5db; /* Серый бордер */
+  border: 1px solid #d1d5db;
   cursor: pointer;
-  transition: all 0.2s ease; /* Плавный переход для анимации */
-  user-select: none; /* Предотвратить выделение текста при клике */
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
 .btn:hover {
-  transform: scale(1.05); /* Легкое увеличение при наведении */
+  transform: scale(1.05);
 }
 
-/* Специфичный стиль для кнопки "Оформить заказ" */
 .btn.order {
-  background-color: #2563eb; /* Синий фон */
+  background-color: #2563eb;
   color: white;
   border-color: #2563eb;
 }
 
 .btn.order:hover:not(:disabled) {
-  background-color: #3b82f6; /* Более светлый синий при наведении */
+  background-color: #3b82f6;
   border-color: #3b82f6;
-  transform: scale(1.05); /* Сохраняем анимацию */
+  transform: scale(1.05);
 }
 
 .btn:disabled {
-  opacity: 0.5; /* Затемнение */
-  cursor: not-allowed; /* Курсор "запрещено" */
-  transform: none !important; /* Отключаем анимацию при отключенной кнопке */
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
 .table-container {
-  border: 1px solid #d1d5db; /* Серый бордер */
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  overflow-x: auto; /* Прокрутка для узких экранов */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Легкая тень */
-  background-color: #fff; /* Белый фон таблицы */
+  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
 }
 
 .table-header,
 .table-row {
   display: grid;
-  /* Сетка колонок: чекбокс (фиксир), фото (80px), книга (2 части), год (1.5), доступно (1.5), издательство (1.5), изменение (1.5) */
   grid-template-columns: 40px 80px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
-  align-items: start; /* Выравнивание по верху, чтобы фильтры не растягивали ячейку */
-  border-bottom: 1px solid #e5e7eb; /* Светло-серый разделитель строк */
+  align-items: start;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .table-header {
-  background-color: #f9fafb; /* Очень светло-серый фон заголовка */
+  background-color: #f9fafb;
   font-weight: bold;
-  padding: 0.5rem 0.75rem; /* Паддинги заголовка */
-  color: #374151; /* Цвет текста заголовка */
+  padding: 0.5rem 0.75rem;
+  color: #374151;
 }
 
 .table-row {
-  cursor: pointer; /* Курсор-указатель */
-  transition: background-color 0.2s ease-in-out; /* Анимация фона строки */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
 }
 
 .table-row:last-child {
-  border-bottom: none; /* Нет бордера у последней строки */
+  border-bottom: none;
 }
 
-/* Стиль для строки, если availableCount === 0 */
 .table-row.row-disabled {
-  opacity: 0.6; /* Затемнение строки */
-  background-color: #fef2f2; /* Светло-красный фон */
-  cursor: not-allowed; /* Курсор "запрещено" */
+  opacity: 0.6;
+  background-color: #fef2f2;
+  cursor: not-allowed;
 }
 
 .table-row:hover:not(.row-disabled) {
-  background-color: #f0f4f8; /* Более заметный фон при наведении */
+  background-color: #f0f4f8;
 }
 
 .cell {
-  padding: 0.75rem 0.75rem; /* Паддинги ячеек */
+  padding: 0.75rem 0.75rem;
   overflow: hidden;
-  text-overflow: ellipsis; /* Многоточие для длинного текста */
-  white-space: nowrap; /* Предотвратить перенос текста */
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: flex;
-  flex-direction: column; /* Ячейка может содержать заголовок и фильтр */
+  flex-direction: column;
   justify-content: center;
 }
 
 .table-header .cell {
-  /* Для заголовков выравнивание по верху из-за фильтров */
   align-items: flex-start;
   justify-content: flex-start;
 }
 
 .cell.checkbox-cell {
-  padding-top: 0.9rem; /* Выравнивание чекбокса по центру с текстом */
+  padding-top: 0.9rem;
   align-items: center;
 }
 
 .header-filter-input {
   margin-top: 5px;
-  padding: 0.4rem 0.6rem; /* Паддинги инпута */
+  padding: 0.4rem 0.6rem;
   font-size: 0.9rem;
-  border: 1px solid #d1d5db; /* Серый бордер */
+  border: 1px solid #d1d5db;
   border-radius: 4px;
   width: 100%;
-  box-sizing: border-box; /* Учитываем паддинг и бордер в ширине */
+  box-sizing: border-box;
   background-color: #fff;
   color: #374151;
 }
 
 .header-filter-input:focus {
-  border-color: #3b82f6; /* Синий бордер при фокусе */
-  outline: none; /* Убрать стандартный outline */
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); /* Легкая тень при фокусе */
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .year-column,
@@ -688,7 +756,6 @@ export default {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Стили для ячейки с изображением в таблице */
 .image-cell {
   padding: 0.5rem;
   display: flex;
@@ -700,10 +767,9 @@ export default {
   max-width: 60px;
   max-height: 60px;
   border-radius: 4px;
-  object-fit: contain; /* Предотвращает искажение пропорций */
+  object-fit: contain;
 }
 
-/* Стили модального окна для просмотра */
 .modal-overlay {
   position: fixed;
   inset: 0; /* Растянуть на весь экран */
@@ -741,12 +807,11 @@ export default {
 
 .modal h2 {
   text-align: center;
-  font-size: 1.6rem; /* Немного крупнее заголовок */
-  margin-bottom: 1.8rem; /* Больше отступ снизу */
+  font-size: 1.6rem;
+  margin-bottom: 1.8rem;
   color: #1f2937;
 }
 
-/* Стиль для обертки изображения в модальном окне */
 .modal-image-wrapper {
   display: flex;
   justify-content: center;
@@ -762,33 +827,31 @@ export default {
   background-color: #f9fafb;
 }
 
-/* Стиль для групп информации в модалке */
 .info-group {
-  margin-bottom: 1.2rem; /* Отступ между группами информации */
+  margin-bottom: 1.2rem;
 }
 
 .info-group label {
   display: block;
   margin-bottom: 0.4rem;
-  font-weight: bold; /* Жирный текст для заголовка информации */
+  font-weight: bold;
   color: #374151;
-  font-size: 0.9rem; /* Чуть меньше шрифт для заголовка */
+  font-size: 0.9rem;
 }
 
 .info-group p {
-  margin: 0; /* Убрать стандартные отступы параграфа */
-  padding: 0.6rem 0.8rem; /* Паддинги текста информации */
-  border: 1px solid #e5e7eb; /* Легкий бордер */
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
-  background-color: #f9fafb; /* Светлый фон для блока информации */
+  background-color: #f9fafb;
   color: #1f2937;
-  word-break: break-word; /* Перенос слов, если текст длинный */
-  white-space: pre-wrap; /* Сохранить переносы строк в описании */
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
-/* Стиль для кнопки закрытия модального окна */
 .btn.close-modal-button {
-  background-color: #6b7280; /* Серый фон */
+  background-color: #6b7280;
   color: white;
   border-color: #6b7280;
   margin-top: 1.5rem;
@@ -796,35 +859,51 @@ export default {
 }
 
 .btn.close-modal-button:hover {
-  background-color: #4a5568; /* Более темный серый при наведении */
+  background-color: #4a5568;
   border-color: #4a5568;
 }
 
-/* Стили для верхней панели с кнопкой */
 .top-bar {
   display: flex;
-  justify-content: flex-end; /* Кнопка справа */
+  justify-content: flex-end;
   margin-bottom: 1rem;
 }
 
 .button-group-right {
   display: flex;
-  gap: 1rem; /* Отступ между кнопками (если бы их было больше) */
+  gap: 1rem;
 }
 
 .empty-table-message {
   text-align: center;
   padding: 2rem;
-  color: #6b7280; /* Серый цвет текста */
+  color: #6b7280;
   font-size: 1.1rem;
 }
 
-/* Стили для маленьких экранов */
 @media (max-width: 768px) {
+  .recommendation-type-selector {
+    flex-direction: column; /* Стекаем элементы вертикально */
+    align-items: stretch; /* Растягиваем по ширине */
+  }
+  .selector-label {
+    margin-bottom: 0.75rem; /* Отступ снизу для метки */
+    text-align: center; /* Центрируем текст метки */
+  }
+  .button-group {
+    justify-content: center; /* Центрируем кнопки в группе */
+  }
+  .btn-recs-type {
+    padding: 0.5rem 0.8rem; /* Уменьшаем паддинги кнопок */
+    font-size: 0.85rem;
+    flex-grow: 1; /* Чтобы кнопки занимали доступное пространство */
+    text-align: center;
+  }
+
   .table-header,
   .table-row {
-    grid-template-columns: 40px 60px 1.5fr 1fr 1fr 1fr 1.5fr; /* Скорректировать ширину колонок */
-    font-size: 0.9rem; /* Уменьшить шрифт */
+    grid-template-columns: 40px 60px 1.5fr 1fr 1fr 1fr 1.5fr;
+    font-size: 0.9rem;
   }
 
   .example-image {
@@ -833,12 +912,12 @@ export default {
   }
 
   .cell {
-    padding: 0.5rem; /* Уменьшить паддинги */
+    padding: 0.5rem;
   }
 
   .header-filter-input,
   .filter-range input {
-    font-size: 0.8rem; /* Уменьшить шрифт в инпутах */
+    font-size: 0.8rem;
     padding: 0.3rem;
   }
 

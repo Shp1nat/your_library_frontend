@@ -5,6 +5,7 @@
       <nav class="menu">
         <router-link to="/profile">Профиль</router-link>
         <router-link to="/books">Книги</router-link>
+        <router-link to="/recommendations">Рекомендации</router-link>
         <router-link to="/orders">Заказы</router-link>
         <router-link to="/vacancies">Вакансии</router-link>
       </nav>
