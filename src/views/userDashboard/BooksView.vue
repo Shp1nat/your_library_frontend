@@ -146,11 +146,16 @@
         </div>
         <div class="info-group">
           <label>Авторы:</label>
-          <p v-if="selectedExample.book?.authors?.length > 0">
-            <span v-for="(author, index) in selectedExample.book.authors" :key="author.id">
-              {{ author.lastname }} {{ author.name }} {{ author.patronymic }}<span v-if="index < selectedExample.book.authors.length - 1">, </span>
-            </span>
-          </p>
+          <div v-if="selectedExample.book?.authors?.length > 0" class="authors-list">
+            <div v-for="author in selectedExample.book.authors" :key="author.id" class="author-item">
+              <img
+                  :src="author.picture ? 'data:image/jpeg;base64,' + author.picture : defaultAuthorAvatar"
+                  alt="Фото автора"
+                  class="author-avatar-modal"
+              />
+              <span>{{ author.lastname }} {{ author.name }} {{ author.patronymic }}</span>
+            </div>
+          </div>
           <p v-else>Не указано</p>
         </div>
         <div class="info-group">
@@ -199,16 +204,17 @@
 
 <script>
 import defaultExampleAvatar from '@/assets/defaultExampleAvatar.jpg';
+import defaultAuthorAvatar from '@/assets/defaultAuthorAvatar.jpg'; // Импорт аватара автора
 
 export default {
   data() {
     return {
       examples: [],
-      selectedExample: null, // Используется для отображения в модальном окне
+      selectedExample: null,
       sortDir: 'desc',
       sortField: 'updatedAt',
-      selectedIds: [], // Массив ID выбранных чекбоксами экземпляров
-      searchFields: { // Поля для фильтрации
+      selectedIds: [],
+      searchFields: {
         exampleName: '',
         year_from: '',
         year_to: '',
@@ -217,29 +223,25 @@ export default {
         publisherName: ''
       },
       errorMessage: '',
-      isOrdering: false, // Флаг для состояния оформления заказа
+      isOrdering: false,
       defaultExampleAvatar,
+      defaultAuthorAvatar
     };
   },
   computed: {
-    // Получаем только доступные экземпляры
     availableExamples() {
       return this.examples.filter(example => example.availableCount > 0);
     },
     allSelected() {
-      // Проверяем, выбраны ли все *доступные* экземпляры
-      // И также убеждаемся, что выбранных ID больше 0, чтобы избежать ложного "все выбраны" при пустом списке
       return this.availableExamples.length > 0 &&
           this.selectedIds.length === this.availableExamples.length &&
           this.selectedIds.every(id => this.availableExamples.some(ex => ex.id === id));
     },
   },
   async mounted() {
-    // Загрузка данных при монтировании компонента
     await this.loadExamples();
   },
   methods: {
-    // Метод для форматирования даты, остается без изменений
     formatDate(dateStr) {
       if (!dateStr) return '';
       try {
@@ -249,7 +251,6 @@ export default {
         return 'Некорректная дата';
       }
     },
-    // Метод для загрузки экземпляров с учетом фильтров и сортировки
     async loadExamples() {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
@@ -260,10 +261,8 @@ export default {
       }
 
       const conditions = [];
-
-      // Формирование условий для запроса на основе полей поиска
       if (this.searchFields.exampleName) {
-        conditions.push({ var: 'name', operator: 'contain', value: this.searchFields.exampleName });
+        conditions.push({ var: 'book.name', operator: 'contain', value: this.searchFields.exampleName });
       }
       if (this.searchFields.year_from !== '' && this.searchFields.year_from !== null) {
         const yearFrom = parseInt(this.searchFields.year_from, 10);
@@ -285,20 +284,11 @@ export default {
           conditions.push({ var: 'availableCount', operator: 'less_or_equal', value: countTo });
         }
       }
-      // Обработка фильтра по названию книги (в оригинале было exampleName, но фильтруем по book.name)
-      // Предполагаем, что API `get-example-ids.json` поддерживает фильтрацию по связанным полям через 'name' для 'book'.
-      // Если нет, нужно будет изменить логику фильтрации.
-      // Исходя из примера, `exampleName` используется для фильтрации по названию книги.
-      if (this.searchFields.exampleName) {
-        conditions.push({ var: 'book.name', operator: 'contain', value: this.searchFields.exampleName });
-      }
-      // Фильтрация по издательству (publisher.name)
       if (this.searchFields.publisherName) {
         conditions.push({ var: 'publisher.name', operator: 'contain', value: this.searchFields.publisherName });
       }
 
       try {
-        // Шаг 1: Получение ID экземпляров по условиям
         const idResponse = await fetch('http://localhost:3000/proxy/get-example-ids.json', {
           method: 'POST',
           headers: {
@@ -307,37 +297,32 @@ export default {
           },
           body: JSON.stringify({
             conditions,
-            main_cond: 'and', // Используем 'and' для комбинирования фильтров
-            search: '', // Пустой общий поиск, т.к. используем пополевые фильтры
+            main_cond: 'and',
+            search: '',
             sort_col: this.sortField,
             sort_dir: this.sortDir,
           }),
         });
 
         const idResponseJson = await idResponse.json();
-
         if (idResponseJson.error) {
           this.errorMessage = idResponseJson.error;
           this.examples = [];
-          return; // Прерываем выполнение при ошибке
+          return;
         }
 
-        // Проверяем, есть ли ID для получения детальных данных
         if (!idResponseJson.result?.rows?.length) {
           this.examples = [];
-          // Сброс выбранных ID, оставляем только те, которых нет в новом пустом списке (т.е. ничего)
           this.selectedIds = this.selectedIds.filter(id => this.examples.some(ex => ex.id === id));
-          return; // Если ID нет, завершаем
+          return;
         }
 
-        // Шаг 2: Получение детальных данных по полученным ID
         const examplesRes = await fetch('http://localhost:3000/proxy/get-example-ids-out.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          // Отправляем только result из первого запроса, как в оригинале
           body: JSON.stringify(idResponseJson.result),
         });
 
@@ -347,7 +332,6 @@ export default {
           this.examples = [];
         } else {
           this.examples = examplesData.result.rows || [];
-          // Сброс выбранных ID, оставляем только те, которые есть в новом списке
           this.selectedIds = this.selectedIds.filter(id => this.examples.some(ex => ex.id === id));
         }
       } catch (err) {
@@ -355,13 +339,11 @@ export default {
         this.errorMessage = 'Ошибка подключения к серверу или получения данных';
         this.examples = [];
       } finally {
-        // После загрузки данных, убедимся, что выбранные ID соответствуют доступным
         this.selectedIds = this.selectedIds.filter(id =>
             this.examples.some(ex => ex.id === id && ex.availableCount > 0)
         );
       }
     },
-    // Методы сортировки, остаются без изменений
     toggleYearSort() {
       if (this.sortField === 'year') {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -385,12 +367,11 @@ export default {
         this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortField = 'updatedAt';
-        this.sortDir = 'desc'; // Дефолтная сортировка по дате изменения чаще всего убывающая
+        this.sortDir = 'desc';
       }
       this.loadExamples();
     },
-    // Метод для просмотра деталей (открывает модальное окно)
-    async viewExampleDetails(id) { // Переименован из selectExample
+    async viewExampleDetails(id) {
       this.errorMessage = '';
       const token = localStorage.getItem('token');
       if (!token) {
@@ -398,7 +379,6 @@ export default {
         return;
       }
       try {
-        // Запрос на получение данных конкретного экземпляра
         const res = await fetch('http://localhost:3000/proxy/get-example-ids-out.json', {
           method: 'POST',
           headers: {
@@ -423,27 +403,23 @@ export default {
         this.selectedExample = null;
       }
     },
-    // Метод для закрытия модального окна
     closeModal() {
       this.selectedExample = null;
     },
-    // Метод для выбора/снятия выбора всех чекбоксов (только для доступных)
     toggleSelectAll(event) {
       if (event.target.checked) {
-        // Выбираем ID только тех экземпляров, у которых availableCount > 0
         this.selectedIds = this.availableExamples.map(example => example.id);
       } else {
         this.selectedIds = [];
       }
     },
-    // Новый метод для оформления заказа
     async placeOrder() {
       if (!this.selectedIds.length || this.isOrdering) {
-        return; // Не делаем ничего, если ничего не выбрано или уже идет процесс
+        return;
       }
 
       this.errorMessage = '';
-      this.isOrdering = true; // Устанавливаем флаг, чтобы отключить кнопку
+      this.isOrdering = true;
       const token = localStorage.getItem('token');
       if (!token) {
         this.errorMessage = 'Пользователь не авторизован.';
@@ -466,20 +442,15 @@ export default {
         if (responseJson.error) {
           this.errorMessage = responseJson.error;
         } else {
-          // Заказ успешно оформлен
           console.log('Заказ успешно оформлен:', responseJson.result);
-          // Очищаем выбранные ID
           this.selectedIds = [];
-          // Обновляем список экземпляров
           await this.loadExamples();
-          // Можно добавить сообщение об успехе, если нужно
-          // alert('Заказ успешно оформлен!');
         }
       } catch (err) {
         console.error('Ошибка при оформлении заказа:', err);
         this.errorMessage = 'Ошибка подключения к серверу при оформлении заказа.';
       } finally {
-        this.isOrdering = false; // Снимаем флаг независимо от результата
+        this.isOrdering = false;
       }
     },
   },
@@ -490,7 +461,7 @@ export default {
 /* Используем тот же базовый стиль, что и в редакторе, с дополнениями для фото */
 .order-container {
   padding: 2rem;
-  font-family: sans-serif; /* Убедимся, что используется стандартный шрифт */
+  font-family: sans-serif;
 }
 
 .error-message {
@@ -502,7 +473,7 @@ export default {
   margin: 10px 0;
   font-weight: bold;
   text-align: center;
-  animation: fadeIn 0.3s ease; /* Анимация появления */
+  animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -522,126 +493,121 @@ export default {
 .title {
   font-size: 2rem;
   font-weight: bold;
-  color: #1f2937; /* Темно-серый текст */
+  color: #1f2937;
 }
 
-/* Стили кнопок */
 .btn {
-  background-color: #f3f4f6; /* Светло-серый фон */
-  color: #1f2937; /* Темно-серый текст */
+  background-color: #f3f4f6;
+  color: #1f2937;
   padding: 0.5rem 1rem;
   font-size: 1rem;
   border-radius: 6px;
-  border: 1px solid #d1d5db; /* Серый бордер */
+  border: 1px solid #d1d5db;
   cursor: pointer;
-  transition: all 0.2s ease; /* Плавный переход для анимации */
-  user-select: none; /* Предотвратить выделение текста при клике */
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
 .btn:hover {
-  transform: scale(1.05); /* Легкое увеличение при наведении */
+  transform: scale(1.05);
 }
 
-/* Специфичный стиль для кнопки "Оформить заказ" */
 .btn.order {
-  background-color: #2563eb; /* Синий фон */
+  background-color: #2563eb;
   color: white;
   border-color: #2563eb;
 }
 
 .btn.order:hover:not(:disabled) {
-  background-color: #3b82f6; /* Более светлый синий при наведении */
+  background-color: #3b82f6;
   border-color: #3b82f6;
-  transform: scale(1.05); /* Сохраняем анимацию */
+  transform: scale(1.05);
 }
 
 .btn:disabled {
-  opacity: 0.5; /* Затемнение */
-  cursor: not-allowed; /* Курсор "запрещено" */
-  transform: none !important; /* Отключаем анимацию при отключенной кнопке */
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
 .table-container {
-  border: 1px solid #d1d5db; /* Серый бордер */
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  overflow-x: auto; /* Прокрутка для узких экранов */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Легкая тень */
-  background-color: #fff; /* Белый фон таблицы */
+  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
 }
 
 .table-header,
 .table-row {
   display: grid;
-  /* Сетка колонок: чекбокс (фиксир), фото (80px), книга (2 части), год (1.5), доступно (1.5), издательство (1.5), изменение (1.5) */
   grid-template-columns: 40px 80px 2fr 1.5fr 1.5fr 1.5fr 1.5fr;
-  align-items: start; /* Выравнивание по верху, чтобы фильтры не растягивали ячейку */
-  border-bottom: 1px solid #e5e7eb; /* Светло-серый разделитель строк */
+  align-items: start;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .table-header {
-  background-color: #f9fafb; /* Очень светло-серый фон заголовка */
+  background-color: #f9fafb;
   font-weight: bold;
-  padding: 0.5rem 0.75rem; /* Паддинги заголовка */
-  color: #374151; /* Цвет текста заголовка */
+  padding: 0.5rem 0.75rem;
+  color: #374151;
 }
 
 .table-row {
-  cursor: pointer; /* Курсор-указатель */
-  transition: background-color 0.2s ease-in-out; /* Анимация фона строки */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
 }
 
 .table-row:last-child {
-  border-bottom: none; /* Нет бордера у последней строки */
+  border-bottom: none;
 }
 
-/* Стиль для строки, если availableCount === 0 */
 .table-row.row-disabled {
-  opacity: 0.6; /* Затемнение строки */
-  background-color: #fef2f2; /* Светло-красный фон */
-  cursor: not-allowed; /* Курсор "запрещено" */
+  opacity: 0.6;
+  background-color: #fef2f2;
+  cursor: not-allowed;
 }
 
 .table-row:hover:not(.row-disabled) {
-  background-color: #f0f4f8; /* Более заметный фон при наведении */
+  background-color: #f0f4f8;
 }
 
 .cell {
-  padding: 0.75rem 0.75rem; /* Паддинги ячеек */
+  padding: 0.75rem 0.75rem;
   overflow: hidden;
-  text-overflow: ellipsis; /* Многоточие для длинного текста */
-  white-space: nowrap; /* Предотвратить перенос текста */
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: flex;
-  flex-direction: column; /* Ячейка может содержать заголовок и фильтр */
+  flex-direction: column;
   justify-content: center;
 }
 
 .table-header .cell {
-  /* Для заголовков выравнивание по верху из-за фильтров */
   align-items: flex-start;
   justify-content: flex-start;
 }
 
 .cell.checkbox-cell {
-  padding-top: 0.9rem; /* Выравнивание чекбокса по центру с текстом */
+  padding-top: 0.9rem;
   align-items: center;
 }
 
 .header-filter-input {
   margin-top: 5px;
-  padding: 0.4rem 0.6rem; /* Паддинги инпута */
+  padding: 0.4rem 0.6rem;
   font-size: 0.9rem;
-  border: 1px solid #d1d5db; /* Серый бордер */
+  border: 1px solid #d1d5db;
   border-radius: 4px;
   width: 100%;
-  box-sizing: border-box; /* Учитываем паддинг и бордер в ширине */
+  box-sizing: border-box;
   background-color: #fff;
   color: #374151;
 }
 
 .header-filter-input:focus {
-  border-color: #3b82f6; /* Синий бордер при фокусе */
-  outline: none; /* Убрать стандартный outline */
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); /* Легкая тень при фокусе */
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .year-column,
@@ -688,7 +654,6 @@ export default {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Стили для ячейки с изображением в таблице */
 .image-cell {
   padding: 0.5rem;
   display: flex;
@@ -700,20 +665,19 @@ export default {
   max-width: 60px;
   max-height: 60px;
   border-radius: 4px;
-  object-fit: contain; /* Предотвращает искажение пропорций */
+  object-fit: contain;
 }
 
-/* Стили модального окна для просмотра */
 .modal-overlay {
   position: fixed;
-  inset: 0; /* Растянуть на весь экран */
-  background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный темный фон */
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
-  align-items: center; /* Центрирование по вертикали */
-  overflow: auto; /* Добавляем прокрутку для всего оверлея, если модалка выходит за экран */
-  z-index: 1000; /* Поверх всего остального */
-  animation: fadeInOverlay 0.3s ease; /* Анимация появления фона */
+  align-items: center;
+  overflow: auto;
+  z-index: 1000;
+  animation: fadeInOverlay 0.3s ease;
 }
 
 @keyframes fadeInOverlay {
@@ -725,13 +689,13 @@ export default {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 500px; /* Ширина модального окна */
+  width: 500px;
   max-width: 90%;
-  max-height: 80vh; /* Ограничиваем максимальную высоту модального окна (например, 80% от высоты viewport) */
-  overflow-y: auto; /* Добавляем вертикальную прокрутку, если содержимое выходит за max-height */
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); /* Более выраженная тень */
+  max-height: 85vh; /* Немного увеличил для потенциально длинного списка авторов */
+  overflow-y: auto;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
   position: relative;
-  animation: zoomInModal 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Анимация появления модалки (с отскоком) */
+  animation: zoomInModal 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
 
 @keyframes zoomInModal {
@@ -741,12 +705,11 @@ export default {
 
 .modal h2 {
   text-align: center;
-  font-size: 1.6rem; /* Немного крупнее заголовок */
-  margin-bottom: 1.8rem; /* Больше отступ снизу */
+  font-size: 1.6rem;
+  margin-bottom: 1.8rem;
   color: #1f2937;
 }
 
-/* Стиль для обертки изображения в модальном окне */
 .modal-image-wrapper {
   display: flex;
   justify-content: center;
@@ -762,33 +725,55 @@ export default {
   background-color: #f9fafb;
 }
 
-/* Стиль для групп информации в модалке */
 .info-group {
-  margin-bottom: 1.2rem; /* Отступ между группами информации */
+  margin-bottom: 1.2rem;
 }
 
 .info-group label {
   display: block;
   margin-bottom: 0.4rem;
-  font-weight: bold; /* Жирный текст для заголовка информации */
+  font-weight: bold;
   color: #374151;
-  font-size: 0.9rem; /* Чуть меньше шрифт для заголовка */
+  font-size: 0.9rem;
 }
 
-.info-group p {
-  margin: 0; /* Убрать стандартные отступы параграфа */
-  padding: 0.6rem 0.8rem; /* Паддинги текста информации */
-  border: 1px solid #e5e7eb; /* Легкий бордер */
+.info-group p, .authors-list { /* Объединяем стиль для p и нового authors-list */
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
-  background-color: #f9fafb; /* Светлый фон для блока информации */
+  background-color: #f9fafb;
   color: #1f2937;
-  word-break: break-word; /* Перенос слов, если текст длинный */
-  white-space: pre-wrap; /* Сохранить переносы строк в описании */
+  word-break: break-word;
+}
+.info-group p { /* Для текста, где нет авторов или других списков */
+  white-space: pre-wrap;
 }
 
-/* Стиль для кнопки закрытия модального окна */
+/* Новые стили для списка авторов в модальном окне */
+.authors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem; /* Расстояние между авторами */
+}
+
+.author-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Расстояние между фото и ФИО автора */
+}
+
+.author-avatar-modal {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* Круглое фото автора */
+  object-fit: cover; /* Чтобы изображение покрывало область, не искажаясь */
+  border: 1px solid #d1d5db; /* Легкая рамка */
+}
+/* Конец новых стилей для авторов */
+
 .btn.close-modal-button {
-  background-color: #6b7280; /* Серый фон */
+  background-color: #6b7280;
   color: white;
   border-color: #6b7280;
   margin-top: 1.5rem;
@@ -796,35 +781,33 @@ export default {
 }
 
 .btn.close-modal-button:hover {
-  background-color: #4a5568; /* Более темный серый при наведении */
+  background-color: #4a5568;
   border-color: #4a5568;
 }
 
-/* Стили для верхней панели с кнопкой */
 .top-bar {
   display: flex;
-  justify-content: flex-end; /* Кнопка справа */
+  justify-content: flex-end;
   margin-bottom: 1rem;
 }
 
 .button-group-right {
   display: flex;
-  gap: 1rem; /* Отступ между кнопками (если бы их было больше) */
+  gap: 1rem;
 }
 
 .empty-table-message {
   text-align: center;
   padding: 2rem;
-  color: #6b7280; /* Серый цвет текста */
+  color: #6b7280;
   font-size: 1.1rem;
 }
 
-/* Стили для маленьких экранов */
 @media (max-width: 768px) {
   .table-header,
   .table-row {
-    grid-template-columns: 40px 60px 1.5fr 1fr 1fr 1fr 1.5fr; /* Скорректировать ширину колонок */
-    font-size: 0.9rem; /* Уменьшить шрифт */
+    grid-template-columns: 40px 60px 1.5fr 1fr 1fr 1fr 1.5fr;
+    font-size: 0.9rem;
   }
 
   .example-image {
@@ -833,12 +816,12 @@ export default {
   }
 
   .cell {
-    padding: 0.5rem; /* Уменьшить паддинги */
+    padding: 0.5rem;
   }
 
   .header-filter-input,
   .filter-range input {
-    font-size: 0.8rem; /* Уменьшить шрифт в инпутах */
+    font-size: 0.8rem;
     padding: 0.3rem;
   }
 
@@ -853,6 +836,7 @@ export default {
 
   .modal {
     padding: 1.5rem;
+    max-height: 90vh; /* Учитываем на маленьких экранах */
   }
 
   .modal h2 {
@@ -869,10 +853,13 @@ export default {
     margin-bottom: 1rem;
   }
 
-  .info-group p {
+  .info-group p, .authors-list {
     padding: 0.5rem;
     font-size: 0.9rem;
   }
+  .author-avatar-modal {
+    width: 35px;
+    height: 35px;
+  }
 }
-
 </style>

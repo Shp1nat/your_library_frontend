@@ -150,7 +150,7 @@
       </div>
 
       <div v-if="!examples.length && !errorMessage" class="empty-table-message">
-        Загрузка рекомендаций или нет книг по заданным фильтрам и типу рекомендаций.
+        Рекомендации пусты.
       </div>
     </div>
 
@@ -170,11 +170,16 @@
         </div>
         <div class="info-group">
           <label>Авторы:</label>
-          <p v-if="selectedExample.book?.authors?.length > 0">
-            <span v-for="(author, index) in selectedExample.book.authors" :key="author.id">
-              {{ author.lastname }} {{ author.name }} {{ author.patronymic }}<span v-if="index < selectedExample.book.authors.length - 1">, </span>
-            </span>
-          </p>
+          <div v-if="selectedExample.book?.authors?.length > 0" class="authors-list">
+            <div v-for="author in selectedExample.book.authors" :key="author.id" class="author-item">
+              <img
+                  :src="author.picture ? 'data:image/jpeg;base64,' + author.picture : defaultAuthorAvatar"
+                  alt="Фото автора"
+                  class="author-avatar-modal"
+              />
+              <span>{{ author.lastname }} {{ author.name }} {{ author.patronymic }}</span>
+            </div>
+          </div>
           <p v-else>Не указано</p>
         </div>
         <div class="info-group">
@@ -222,7 +227,8 @@
 </template>
 
 <script>
-import defaultExampleAvatar from '@/assets/defaultExampleAvatar.jpg'; // Убедитесь, что путь корректен
+import defaultExampleAvatar from '@/assets/defaultExampleAvatar.jpg';
+import defaultAuthorAvatar from '@/assets/defaultAuthorAvatar.jpg'; // Импорт аватара автора
 
 export default {
   name: 'RecommendedBooksPage',
@@ -244,7 +250,8 @@ export default {
       errorMessage: '',
       isOrdering: false,
       defaultExampleAvatar,
-      recsType: 'genres', // Тип рекомендаций по умолчанию
+      defaultAuthorAvatar, // Добавляем в данные
+      recsType: 'genres',
     };
   },
   computed: {
@@ -288,12 +295,11 @@ export default {
       }
 
       const conditions = [];
-
-      // Добавляем условие типа рекомендаций
       conditions.push({ var: 'recsType', operator: 'equal', value: this.recsType });
 
       if (this.searchFields.exampleName) {
-        conditions.push({ var: 'name', operator: 'contain', value: this.searchFields.exampleName });
+        // Предполагаем, что бэкенд может искать по book.name через 'name' в условиях для get-example-ids
+        conditions.push({ var: 'book.name', operator: 'contain', value: this.searchFields.exampleName });
       }
       if (this.searchFields.year_from !== '' && this.searchFields.year_from !== null) {
         const yearFrom = parseInt(this.searchFields.year_from, 10);
@@ -316,7 +322,8 @@ export default {
         }
       }
       if (this.searchFields.publisherName) {
-        conditions.push({ var: 'publisherName', operator: 'contain', value: this.searchFields.publisherName });
+        // Предполагаем, что бэкенд может искать по publisher.name через 'publisherName' или 'publisher.name'
+        conditions.push({ var: 'publisher.name', operator: 'contain', value: this.searchFields.publisherName });
       }
 
       try {
@@ -415,14 +422,13 @@ export default {
         return;
       }
       try {
-        // Используем новый endpoint для получения деталей, предполагая, что он поддерживает такой же формат запроса для одного элемента
         const res = await fetch('http://localhost:3000/proxy/get-example-ids-out.json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ example: { id } }), // Предполагаем, что API поддерживает это
+          body: JSON.stringify({ example: { id } }),
         });
 
         const data = await res.json();
@@ -431,8 +437,6 @@ export default {
         } else if (data.result?.example) {
           this.selectedExample = data.result.example;
         } else {
-          // Возможно, если API возвращает массив при запросе по ID, нужна другая логика
-          // Например, если data.result.rows && data.result.rows.find(e => e.id === id)
           this.selectedExample = (data.result?.rows && data.result.rows.find(e => e.id === id)) || null;
           if (!this.selectedExample) {
             this.errorMessage = 'Детали экземпляра не найдены.';
@@ -472,7 +476,6 @@ export default {
       }
 
       try {
-        // Endpoint для заказа остается прежним, т.к. это общая операция
         const response = await fetch('http://localhost:3000/proxy/make-order.json', {
           method: 'POST',
           headers: {
@@ -489,8 +492,7 @@ export default {
         } else {
           console.log('Заказ успешно оформлен:', responseJson.result);
           this.selectedIds = [];
-          await this.loadRecommendedExamples(); // Обновляем список рекомендованных книг
-          // alert('Заказ успешно оформлен!'); // Можно раскомментировать для уведомления
+          await this.loadRecommendedExamples();
         }
       } catch (err) {
         console.error('Ошибка при оформлении заказа:', err);
@@ -504,7 +506,6 @@ export default {
 </script>
 
 <style scoped>
-/* Базовые стили, можно скопировать из предыдущего компонента и адаптировать */
 .recommendations-container {
   padding: 2rem;
   font-family: sans-serif;
@@ -542,14 +543,13 @@ export default {
   color: #1f2937;
 }
 
-/* Стили для селектора типа рекомендаций */
 .recommendation-type-selector {
   display: flex;
   align-items: center;
-  justify-content: center; /* Центрируем блок */
+  justify-content: center;
   margin-bottom: 1.5rem;
   padding: 0.75rem;
-  background-color: #f9fafb; /* Светлый фон для выделения блока */
+  background-color: #f9fafb;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
@@ -557,47 +557,45 @@ export default {
 .selector-label {
   margin-right: 1rem;
   font-size: 1rem;
-  color: #374151; /* Темно-серый текст */
+  color: #374151;
   font-weight: 500;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem; /* Пространство между кнопками */
-  border: 1px solid #d1d5db; /* Рамка вокруг группы */
+  gap: 0.5rem;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  overflow: hidden; /* Чтобы скругление работало корректно */
+  overflow: hidden;
 }
 
 .btn-recs-type {
   background-color: #fff;
   color: #374151;
-  padding: 0.6rem 1.2rem; /* Увеличенные паддинги для лучшего вида */
+  padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
-  border: none; /* Убираем индивидуальные рамки */
-  border-right: 1px solid #d1d5db; /* Разделитель между кнопками */
+  border: none;
+  border-right: 1px solid #d1d5db;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
   font-weight: 500;
 }
 
 .btn-recs-type:last-child {
-  border-right: none; /* У последней кнопки нет правого разделителя */
+  border-right: none;
 }
 
 .btn-recs-type:hover {
-  background-color: #f0f4f8; /* Легкое выделение при наведении */
+  background-color: #f0f4f8;
 }
 
 .btn-recs-type.active {
-  background-color: #2563eb; /* Синий фон для активной кнопки */
+  background-color: #2563eb;
   color: white;
   font-weight: 600;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); /* Легкая внутренняя тень */
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
-
-/* Стили кнопок */
 .btn {
   background-color: #f3f4f6;
   color: #1f2937;
@@ -772,14 +770,14 @@ export default {
 
 .modal-overlay {
   position: fixed;
-  inset: 0; /* Растянуть на весь экран */
-  background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный темный фон */
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
-  align-items: center; /* Центрирование по вертикали */
-  overflow: auto; /* Добавляем прокрутку для всего оверлея, если модалка выходит за экран */
-  z-index: 1000; /* Поверх всего остального */
-  animation: fadeInOverlay 0.3s ease; /* Анимация появления фона */
+  align-items: center;
+  overflow: auto;
+  z-index: 1000;
+  animation: fadeInOverlay 0.3s ease;
 }
 
 @keyframes fadeInOverlay {
@@ -791,13 +789,13 @@ export default {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 500px; /* Ширина модального окна */
+  width: 500px;
   max-width: 90%;
-  max-height: 80vh; /* Ограничиваем максимальную высоту модального окна (например, 80% от высоты viewport) */
-  overflow-y: auto; /* Добавляем вертикальную прокрутку, если содержимое выходит за max-height */
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); /* Более выраженная тень */
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
   position: relative;
-  animation: zoomInModal 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Анимация появления модалки (с отскоком) */
+  animation: zoomInModal 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
 
 @keyframes zoomInModal {
@@ -839,7 +837,7 @@ export default {
   font-size: 0.9rem;
 }
 
-.info-group p {
+.info-group > p, .authors-list { /* Объединенный стиль для p и authors-list */
   margin: 0;
   padding: 0.6rem 0.8rem;
   border: 1px solid #e5e7eb;
@@ -847,7 +845,29 @@ export default {
   background-color: #f9fafb;
   color: #1f2937;
   word-break: break-word;
+}
+.info-group > p { /* Специфично для p, если он используется не для списка авторов */
   white-space: pre-wrap;
+}
+
+.authors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.author-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.author-avatar-modal {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #d1d5db;
 }
 
 .btn.close-modal-button {
@@ -883,20 +903,20 @@ export default {
 
 @media (max-width: 768px) {
   .recommendation-type-selector {
-    flex-direction: column; /* Стекаем элементы вертикально */
-    align-items: stretch; /* Растягиваем по ширине */
+    flex-direction: column;
+    align-items: stretch;
   }
   .selector-label {
-    margin-bottom: 0.75rem; /* Отступ снизу для метки */
-    text-align: center; /* Центрируем текст метки */
+    margin-bottom: 0.75rem;
+    text-align: center;
   }
   .button-group {
-    justify-content: center; /* Центрируем кнопки в группе */
+    justify-content: center;
   }
   .btn-recs-type {
-    padding: 0.5rem 0.8rem; /* Уменьшаем паддинги кнопок */
+    padding: 0.5rem 0.8rem;
     font-size: 0.85rem;
-    flex-grow: 1; /* Чтобы кнопки занимали доступное пространство */
+    flex-grow: 1;
     text-align: center;
   }
 
@@ -932,6 +952,7 @@ export default {
 
   .modal {
     padding: 1.5rem;
+    max-height: 90vh;
   }
 
   .modal h2 {
@@ -948,10 +969,13 @@ export default {
     margin-bottom: 1rem;
   }
 
-  .info-group p {
+  .info-group > p, .authors-list {
     padding: 0.5rem;
     font-size: 0.9rem;
   }
+  .author-avatar-modal {
+    width: 35px;
+    height: 35px;
+  }
 }
-
 </style>
