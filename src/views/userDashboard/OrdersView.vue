@@ -80,6 +80,10 @@
           <label>Дата завершения:</label>
           <p>{{ formatDate(selectedOrder.finishDate) || 'Не указана' }}</p>
         </div>
+        <div class="info-group">
+          <label>Адрес:</label>
+          <p>г. Москва, ул. Ленина, д. 24, кор. 1, подъезд 3, этаж 3</p>
+        </div>
         <div class="info-group" v-if="selectedOrder.examples && selectedOrder.examples.length > 0">
           <label>Книги в заказе:</label>
           <ul>

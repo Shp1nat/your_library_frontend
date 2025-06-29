@@ -53,67 +53,68 @@
         <h2>{{ isCreatingNew ? 'Добавление книги' : 'Редактирование книги' }}</h2>
         <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
 
-        <div class="form-group">
-          <label>Название:</label>
-          <input v-model="selectedBook.name" />
-        </div>
-        <div class="form-group">
-          <label>Год:</label>
-          <input type="number" v-model="selectedBook.year" />
-        </div>
-        <div class="form-group">
-          <label>Описание:</label>
-          <textarea v-model="selectedBook.description"></textarea>
-        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Название:</label>
+            <input v-model="selectedBook.name" />
+          </div>
+          <div class="form-group">
+            <label>Год:</label>
+            <input type="number" v-model="selectedBook.year" />
+          </div>
+          <div class="form-group">
+            <label>Описание:</label>
+            <textarea v-model="selectedBook.description"></textarea>
+          </div>
 
-        <div class="form-group">
-          <label>Авторы:</label>
-          <input v-model="authorSearch" @input="searchAuthors" placeholder="Поиск авторов..." />
-          <div class="multi-select">
-            <div
-                v-for="author in availableAuthors"
-                :key="author.id"
-                class="select-item"
-                @click="toggleAuthor(author)"
-                :class="{ selected: selectedBook.authors.some(a => a.id === author.id) }"
-            >
-              {{ author.name }} {{ author.patronymic }} {{ author.lastname }}
+          <div class="form-group">
+            <label>Авторы:</label>
+            <input v-model="authorSearch" @input="searchAuthors" placeholder="Поиск авторов..." />
+            <div class="multi-select">
+              <div
+                  v-for="author in availableAuthors"
+                  :key="author.id"
+                  class="select-item"
+                  @click="toggleAuthor(author)"
+                  :class="{ selected: selectedBook.authors.some(a => a.id === author.id) }"
+              >
+                {{ author.name }} {{ author.patronymic }} {{ author.lastname }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Жанры:</label>
+            <input v-model="genreSearch" @input="searchGenres" placeholder="Поиск жанров..." />
+            <div class="multi-select">
+              <div
+                  v-for="genre in availableGenres"
+                  :key="genre.id"
+                  class="select-item"
+                  @click="toggleGenre(genre)"
+                  :class="{ selected: selectedBook.genres.some(g => g.id === genre.id) }"
+              >
+                {{ genre.name }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Типы:</label>
+            <input v-model="typeSearch" @input="searchTypes" placeholder="Поиск типов..." />
+            <div class="multi-select">
+              <div
+                  v-for="type in availableTypes"
+                  :key="type.id"
+                  class="select-item"
+                  @click="toggleType(type)"
+                  :class="{ selected: selectedBook.types.some(t => t.id === type.id) }"
+              >
+                {{ type.name }}
+              </div>
             </div>
           </div>
         </div>
-
-        <div class="form-group">
-          <label>Жанры:</label>
-          <input v-model="genreSearch" @input="searchGenres" placeholder="Поиск жанров..." />
-          <div class="multi-select">
-            <div
-                v-for="genre in availableGenres"
-                :key="genre.id"
-                class="select-item"
-                @click="toggleGenre(genre)"
-                :class="{ selected: selectedBook.genres.some(g => g.id === genre.id) }"
-            >
-              {{ genre.name }}
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Типы:</label>
-          <input v-model="typeSearch" @input="searchTypes" placeholder="Поиск типов..." />
-          <div class="multi-select">
-            <div
-                v-for="type in availableTypes"
-                :key="type.id"
-                class="select-item"
-                @click="toggleType(type)"
-                :class="{ selected: selectedBook.types.some(t => t.id === type.id) }"
-            >
-              {{ type.name }}
-            </div>
-          </div>
-        </div>
-
         <div class="actions">
           <button @click="saveBook" class="btn save">Сохранить</button>
           <button v-if="!isCreatingNew" @click="deleteBook" class="btn delete">Удалить</button>
@@ -351,7 +352,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ book: this.selectedBook })
+          body: JSON.stringify({book: this.selectedBook})
         });
 
         const responseJson = await response.json();
@@ -376,7 +377,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ book: { id: this.selectedBook.id } })
+          body: JSON.stringify({book: {id: this.selectedBook.id}})
         });
 
         const responseJson = await response.json();
@@ -402,7 +403,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ book: { id: this.selectedIds } })
+          body: JSON.stringify({book: {id: this.selectedIds}})
         });
 
         const responseJson = await response.json();
@@ -428,9 +429,9 @@ export default {
           },
           body: JSON.stringify({
             conditions: this.authorSearch ? [
-                { var: 'name', operator: 'contain', value: this.authorSearch },
-              { var: 'lastname', operator: 'contain', value: this.authorSearch },
-              { var: 'patronymic', operator: 'contain', value: this.authorSearch }
+              {var: 'name', operator: 'contain', value: this.authorSearch},
+              {var: 'lastname', operator: 'contain', value: this.authorSearch},
+              {var: 'patronymic', operator: 'contain', value: this.authorSearch}
             ] : [],
             main_cond: 'or',
             search: '',
@@ -472,7 +473,7 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            conditions: this.genreSearch ? [{ var: 'name', operator: 'contain', value: this.genreSearch }] : [],
+            conditions: this.genreSearch ? [{var: 'name', operator: 'contain', value: this.genreSearch}] : [],
             main_cond: 'and',
             search: '',
             sort_col: 'name',
@@ -513,7 +514,7 @@ export default {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            conditions: this.typeSearch ? [{ var: 'name', operator: 'contain', value: this.typeSearch }] : [],
+            conditions: this.typeSearch ? [{var: 'name', operator: 'contain', value: this.typeSearch}] : [],
             main_cond: 'and',
             search: '',
             sort_col: 'name',
@@ -546,17 +547,17 @@ export default {
     toggleAuthor(author) {
       const idx = this.selectedBook.authors.findIndex(a => a.id === author.id);
       if (idx >= 0) this.selectedBook.authors.splice(idx, 1);
-      else this.selectedBook.authors.push({ id: author.id });
+      else this.selectedBook.authors.push({id: author.id});
     },
     toggleGenre(genre) {
       const idx = this.selectedBook.genres.findIndex(g => g.id === genre.id);
       if (idx >= 0) this.selectedBook.genres.splice(idx, 1);
-      else this.selectedBook.genres.push({ id: genre.id });
+      else this.selectedBook.genres.push({id: genre.id});
     },
     toggleType(type) {
       const idx = this.selectedBook.types.findIndex(t => t.id === type.id);
       if (idx >= 0) this.selectedBook.types.splice(idx, 1);
-      else this.selectedBook.types.push({ id: type.id });
+      else this.selectedBook.types.push({id: type.id});
     },
     toggleSelectAll(event) {
       if (event.target.checked) {
@@ -705,15 +706,27 @@ export default {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 400px;
+  width: 450px; /* Increased width a bit for better layout */
   max-width: 90%;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh; /* Limit overall modal height */
 }
 
 .modal h2 {
   text-align: center;
   font-size: 1.5rem;
   margin-bottom: 1rem;
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+/* New style for the scrollable body */
+.modal-body {
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  padding-right: 15px; /* Add space for the scrollbar */
+  margin-right: -15px; /* Compensate for the padding */
 }
 
 .form-group {
@@ -732,10 +745,15 @@ select {
   resize: none;
 }
 
+textarea {
+  min-height: 80px; /* Give textarea some default height */
+}
+
 .actions {
   display: flex;
   justify-content: space-between;
   margin-top: 1rem;
+  flex-shrink: 0; /* Prevent actions from shrinking */
 }
 
 .sortable {
@@ -776,18 +794,23 @@ select {
 
 .multi-select {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column; /* Changed to column for a list-like view */
+  gap: 4px; /* Reduced gap */
   margin-top: 8px;
+  max-height: 150px; /* Added max-height */
+  overflow-y: auto; /* Added scroll */
+  border: 1px solid #d1d5db; /* Added border for clarity */
+  border-radius: 6px;
+  padding: 8px;
 }
 
 .select-item {
   padding: 6px 12px;
-  border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
   background-color: #f9f9f9;
   transition: background-color 0.2s, border-color 0.2s;
+  border: 1px solid transparent; /* Added for alignment */
 }
 
 .select-item:hover {
